@@ -1,0 +1,131 @@
+---
+title: "Preprocess ClinVar"
+author: Kristoforus 
+date: 28/07/2019
+output: html_notebook
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(GenomicRanges)
+library(VariantAnnotation)
+library(dplyr)
+install.packages("curl")
+library(ensembldb)
+library(EnsDb.Hsapiens.v75)
+library(stringr)
+library(ggplot2)
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) # set working directory as directory of current file
+```
+
+
+# Summary
+This file transforms the raw ClinVar VCF into a CSV containing domain-level pathogenic and benign mutation counts.  
+
+Input: 
+- VCF of raw ClinVar data (downstream_analysis/clinvar_data/clinvar_20190715.vcf) obtained from ftp://ftp.ncbi.nih.gov/pub/clinvar/vcf_GRCh37/archive_2.0/2019/clinvar_20190715.vcf.gz
+- CSV of the domain-specific coordinate of every unique mutations (downstream_analysis/exac_data/all_mutations_domain_specific.csv)
+- CSV of ENSG to ENSP one-to-one mapping (downstream_analysis/clinvar_data/ENSG_ENSP_pairings.txt)
+Output: 
+- CSV of the number of pathogenic and benign mutations for every protein domain (downstream_analysis/clinvar_data/clinvar_reduced.csv)
+
+NOTE: The number of variants commented on the chunks (e.g.  line 41, 48, 52) is obtained from a trial analysis involving approx 6,900 proteins conducted on 28/07/2019. 
+
+
+## Load ClinVar VCF 
+```{r}
+clinvar.vcf <- readVcf("clinvar_20190715.vcf", genome = "hg19")
+clinvar.vcf %>% header 
+clinvar.gr <- rowRanges(clinvar.vcf)
+clinvar.info <- clinvar.vcf %>% info()
+# total 453,467 annotated variants
+```
+
+## Obtain statistics of pathogenic and benign variants
+```{r}
+clinvar.gr.patho <- clinvar.gr[clinvar.info$CLNSIG %in% c("Pathogenic", "Likely_pathogenic", "Pathogenic/Likely_pathogenic") %>% unlist] # Filter for only pathogenic variants
+clinvar.gr.patho <- clinvar.gr.patho[seqnames(clinvar.gr.patho) %in%  c(1:22,"X","Y")] # filter for only autosomal and sex chromosomes
+# 92,822 variants are pathologic or likely pathologic
+
+clinvar.gr.benign <- clinvar.gr[clinvar.info$CLNSIG %in% c("Benign", "Likely_benign", "Benign/Likely_benign") %>% unlist] # Filter for only pathogenic variants
+clinvar.gr.benign <- clinvar.gr.benign[seqnames(clinvar.gr.benign) %in%  c(1:22,"X","Y")] # filter for only autosomal and sex chromosomes
+# 126,086 variants are benign or likely benign 
+```
+
+## Translate genome coordinates of the clinvar variants to protein coordinates
+We ran this in parallel using these codes 
+- downstream_analysis/clinvar_data/clinvar_get_prot_coordinate_benign.R
+- downstream_analysis/clinvar_data/clinvar_get_prot_coordinate_pathogenic.R
+on this input 
+- downstream_analysis/clinvar_data/clinvar_20190715.vcf
+to generate
+- downstream_analysis/clinvar_data/benign_prot_combined.csv
+- downstream_analysis/clinvar_data/pathogenic_prot_combined.csv
+
+
+## Populate result df with clinvar annotations
+```{r}
+# Load all mutations
+df <- read.csv("../exac_data/all_mutations_domain_specific.csv")
+all_residues <- df[c(1,2,3)] %>% unique() # 2,370,236 total residues 
+all_residues <- all_residues[order(all_residues$ENSG, all_residues$residue_position),]
+
+# Map ENSP into the ENSG-annotated mutation data   
+SG.SP.pairings <- read.csv("ENSG_ENSP_pairings.txt", sep = "-", header = FALSE)
+colnames(SG.SP.pairings) <- c("ENSG", "ENSP")
+all_residues <- merge(all_residues, SG.SP.pairings, by = "ENSG")
+all_residues <- all_residues[order(all_residues$ENSG, all_residues$residue_position),]
+all_residues <- all_residues[c(1,4,2,3)]
+
+# Load and clean ClinVar benign and pathogenic data
+clinvar.b.df <- read.csv("benign_prot_combined.csv")[c(4,1)] # 339,904
+colnames(clinvar.b.df) <- c("ENSP", "residue_position")
+clinvar.b.df <- clinvar.b.df[which(str_detect(clinvar.b.df$ENSP, "ENSP*")),]
+clinvar.b.df$benign.mut <- 1 
+clinvar.p.df <- read.csv("pathogenic_prot_ombined.csv")[c(4,1)] # 254,684
+colnames(clinvar.p.df) <- c("ENSP", "residue_position")
+clinvar.p.df <- clinvar.p.df[which(str_detect(clinvar.p.df$ENSP, "ENSP*")),] 
+clinvar.p.df$pathogenic.mut <- 1 
+
+# Map number of ClinVar mutations to every residue position
+clinvar.df <- merge(all_residues, clinvar.b.df, by=c("ENSP", "residue_position"), all=TRUE)
+clinvar.df <- merge(clinvar.df, clinvar.p.df, by=c("ENSP", "residue_position"), all=TRUE)
+clinvar.df[is.na(clinvar.df$benign.mut),]$benign.mut <- 0
+clinvar.df[is.na(clinvar.df$pathogenic.mut),]$pathogenic.mut <- 0
+clinvar.df = clinvar.df[!is.na(clinvar.df$ENSG),] # remove those ENSP unmatched when merging
+
+# reduce dataframe  
+clinvar.df.aggtd <- clinvar.df %>% group_by(ENSG, cluster_membership) %>% 
+  summarise(benign.mut = sum(benign.mut), pathogenic.mut = sum(pathogenic.mut)) # 36,208 rows
+sum(clinvar.df.aggtd$pathogenic.mut) # 11,992
+sum(clinvar.df.aggtd$benign.mut) # 14,752
+write.csv(clinvar.df.aggtd, "clinvar_reduced.csv", row.names = FALSE)
+```
+
+## Statistics of the number of ClinVar benign and pathogenic on the domain level 
+```{r}
+clinvar.df.aggtd$benign.mut %>% summary()
+ggplot(clinvar.df.aggtd, aes(x=benign.mut)) + geom_histogram()
+
+clinvar.df.aggtd$pathogenic.mut %>% summary()
+ggplot(clinvar.df.aggtd, aes(x=pathogenic.mut)) + geom_histogram()
+
+```
+
+## Statistics of the number of ClinVar benign and pathogenic on the protein level 
+```{r}
+clinvar.df.prot <- clinvar.df.aggtd %>% group_by(ENSG) %>% summarise(benign.mut = sum(benign.mut), pathogenic.mut = sum(pathogenic.mut))
+  
+clinvar.df.prot$benign.mut %>% summary()
+ggplot(clinvar.df.prot, aes(x=benign.mut)) + geom_histogram()
+
+clinvar.df.prot$pathogenic.mut %>% summary()
+ggplot(clinvar.df.prot, aes(x=pathogenic.mut)) + geom_histogram()
+```
+
+
+```{r}
+sessionInfo()
+```
+
