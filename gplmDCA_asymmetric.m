@@ -24,8 +24,8 @@
 
 function gplmDCA_asymmetric(fastafile,outputfile, lambda_h,lambda_J,lambda_G,reweighting_threshold,nr_of_cores,M)
     distcomp.feature( 'LocalUseMpiexec', false )
-    addpath('/ysm-gpfs/pi/gerstein/kbo6/version1.0/dca/gplmDCA/functions')
-    addpath('/ysm-gpfs/pi/gerstein/kbo6/version1.0/dca/gplmDCA/3rd_party_code/minFunc')
+    addpath('third-party-code/gplmDCA/functions')
+    addpath('third-party-code/gplmDCA/3rd_party_code/minFunc')
 
     options.method='lbfgs';	%Minimization scheme. Default: 'lbfgs', 'cg' for conjugate gradient (use 'cg' if out of RAM).
     options.optTol=1e-5; 	%default: 1e-5
