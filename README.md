@@ -48,7 +48,8 @@ For parallelise implementation on a compute cluster, you would need to create a 
       "partition": "user1",
       "mem": "1G",
       "time": "00:30:00"
-    }                                                                                                                                                                       }          
+    }
+}          
 ```
 then you can simple run
 ```
