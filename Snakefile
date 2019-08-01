@@ -1,28 +1,27 @@
-configfile: "fasta_names.yaml"
+configfile: "config.yaml"
+#expand("results/plots/{sample}.SC.clustering.plot", sample=fasta_names["samples"])
 
 rule targets: 
 	input:
-		expand("results/plots/{sample}.SC.clustering.plot", sample=fasta_names["samples"])
+		expand("results/msa/{sample}.msa.a3m", sample=config["samples"]) 
+
 
 rule generateMSA:
 	input:
 		fa="fasta_input/{sample}.fa"
-		cpu_per_tasks=1
-		n_of_iterations=5
-		e_value=0.001
-		database="db/uniclust30_2017_10/uniclust30_2017_10"
 	output:
 		"results/msa/{sample}.msa.a3m"
+	params: 
+		cpu_per_tasks="1",
+		n_of_iterations="5",
+		e_value="0.001",
+		database="db/uniclust30_2017_10/uniclust30_2017_10"
+	log:
+		"results/logs/generateMSA/{sample}.log"
 	conda: 
-		"envs/hhsuite.yaml"
+		"env/hhsuite.yaml"
 	shell: 
-		""" hhblits 
-				-cpu cpu_per_tasks
-				-n n_of_iterations 
-            	-e e_value
-            	-i {input.fa}  
-            	-oa3m {sample}.msa.oa3m 
-            	-d database """
+		"hhblits -cpu {params.cpu_per_tasks} -n {params.n_of_iterations} -e {params.e_value} -i {input.fa} -oa3m {output} -d {params.database} 2> {log}"
 
 rule filterMSA_by_gap: 
 	input: 
@@ -30,8 +29,7 @@ rule filterMSA_by_gap:
 	output:
 		"results/msa/{sample}.filtered.gap.a3m"
 	shell: 
-		"cat {input.msa} | ./filterMSA_by_gap.sh >" 
-		"results/msa/{sample}.filtered.gap.a3m"
+		"cat {input.msa} | ./filterMSA_by_gap.sh > results/msa/{sample}.filtered.gap.a3m"
 
 rule reformatMSA: 
 	input:
@@ -48,9 +46,12 @@ rule filterMSA_by_count:
 	output:
 		"results/msa/{sample}.filtered.count.a3m"
 	shell:
-		"if [ $(cat {input} | grep -c "^>") -lt 100 ]; then"
-		"exit 1; else cp {input} results/msa/{sample}.filtered.reformated.a3m;fi"
-
+		"""
+		if [ $(cat {input} | grep -c "^>") -lt 100 ]; then 
+		exit 1
+		else cp {input} results/msa/{sample}.filtered.reformated.a3m
+		fi
+		"""
 """
 rule conserve_scoring:
 	input:
@@ -68,13 +69,14 @@ rule generateMSA_stats:
 
 	output: 
 		"results/msa_stats/{sample}.msa.stats"
-	shell:
-		"cat {input.fa} | sed -n '1,2p' >> results/msa_stats/{sample}.msa.stats;"
-		"echo 'Protein Sequence Length:' "
-		"cat {input.fa} | sed -n '2p' | wc -c >> results/msa_stats/{sample}.msa.stats;"
-		"echo 'MSA count' >> results/msa_stats/{sample}.msa.stats"
-		"wc -l {input.count} >> results/msa_stats/{sample}.msa.stats"
-
+	shell: 
+		"""
+		cat {input.fa} | sed -n '1,2p' >> results/msa_stats/{sample}.msa.stats
+		echo 'Protein Sequence Length:' >> results/msa_stats/{sample}.msa.stats 
+		cat {input.fa} | sed -n '2p' | wc -c >> results/msa_stats/{sample}.msa.stats
+		echo 'MSA count' >> results/msa_stats/{sample}.msa.stats
+		wc -l {input.count} >> results/msa_stats/{sample}.msa.stats
+		"""
 rule gplmDCA: 
 	input: 
 		msa="results/msa/{sample}.filtered.count.a3m",
@@ -87,12 +89,13 @@ rule gplmDCA:
 	output: 
 		"results/dca/{sample}.gplmDCA"
 	shell: 
-		"matlab -nodisplay -nosplash -r "
-		"\"gplmDCA_asymmetric('{input.msa}',"
-		"'{output}', {input.lambda_h}, {input.lambda_J},"
-		" {input.lambda_chi}, {input.reweighting_threshold},"
-		" {input.nr_of_cores}, {n.M})\""
-
+		"""
+		matlab -nodisplay -nosplash -r \
+		\"gplmDCA_asymmetric('{input.msa}', \
+		'{output}', {input.lambda_h}, {input.lambda_J}, \
+		{input.lambda_chi}, {input.reweighting_threshold}, \ 
+		{input.nr_of_cores}, {n.M})\"
+		"""
 rule spectral_clustering: 
 	input: 
 		"results/dca/{sample}.gplmDCA"
@@ -102,9 +105,10 @@ rule spectral_clustering:
 	conda: 
 		"env/slepc.yaml"
 	shell:
-		"cp -r ./spectrus_slim/ ./spectrus_slim_{sample}/;"
-		"./cluster_spectrus.sh {input} {sample} {output.clust} 2> {output.stats}" 
-			# this command (and cluster_spectrus.sh) is a little hack-y
+		"""
+		cp -r ./spectrus_slim/ ./spectrus_slim_{sample}/ 
+		./cluster_spectrus.sh {input} {sample} {output.clust} 2> {output.stats}
+		"""  # this command (and cluster_spectrus.sh) is a little hack-y
 
 rule output_graph: 
 	input: 
