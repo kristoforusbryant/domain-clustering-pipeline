@@ -53,7 +53,7 @@ For parallelise implementation on a compute cluster, you would need to create a 
 ```
 then you can simple run
 ```
-snakemake -k -j 100 --use-conda --cluster-config cluster.json --cluster "sbatch -p {cluster.partition} --mem={cluster.mem} -t {cluster.time} -c {threads}"
+snakemake -k -j 100 --use-conda --cluster-config cluster.json --cluster "sbatch -p {cluster.partition} --cpus-per-task=10 --mem={cluster.mem} -t {cluster.time} -c {threads}"
 ```
 where `-j 100` means that you only allow a maxiumum of 100 jobs to be run simultaneously on the cluster. 
 
