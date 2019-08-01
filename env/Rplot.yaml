@@ -1,0 +1,6 @@
+channels:
+	- conda-forge
+dependencies: 
+	- r =3.6.0
+	- ggplot =0.11.5
+	- r-dplyr =0.8.3
