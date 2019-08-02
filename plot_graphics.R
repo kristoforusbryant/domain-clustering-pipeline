@@ -7,7 +7,7 @@ main <- function(){
   args <- commandArgs(trailingOnly = TRUE)
   dir.name <- args[1]
   output.clustering <- args[2]
-  output.quality <- args[3]  
+  output.quality <- args[3]
  
   # Plotting clustering of a protein sequence
   ## read every cluster labels in a directory 
@@ -21,6 +21,7 @@ main <- function(){
     df = rbind(df, df.single) 
   }
   df = df[order(df$q,df$residue_position),]
+  df = df[df$q <= 10,] #only plot the top 10 
   
   ## define coloring scheme for 10 clusterings 
   #### TODO: make this variable dynamic to the number of clusters detected #### 
@@ -37,6 +38,7 @@ main <- function(){
   
   colnames(df.combined) <- c("residue_position", "membership", "q")
   
+  
   options(bitmapType='cairo') 
   png(output.clustering)
   print(ggplot(df.combined, aes(x=residue_position, y=q, color=membership)) + 
@@ -46,8 +48,10 @@ main <- function(){
   
 
   # Plot quality score against number of clusters
+  system(sprintf("sed -i 's/^[ \t]*//' %squality_score.dat", dir.name))
   df.qualscore <- read.csv(paste(dir.name, "quality_score.dat", sep = "/"), header = FALSE, strip.white=TRUE, sep = " ")
   colnames(df.qualscore) <- c("q", "median_quality_score", "mean_quality_score", "prefactor1", "prefactor2")
+  df.qualscore = df.qualscore[df.qualscore$q <= 10,]
   
   png(output.quality)
   print(ggplot(df.qualscore, aes(x=q, y=median_quality_score)) + geom_line() + geom_point() + 
