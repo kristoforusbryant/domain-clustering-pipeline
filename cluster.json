@@ -1,0 +1,8 @@
+{
+  "__default__": 
+    {
+	"partition": "pi_gerstein", 
+	"mem": "16G", 
+	"time": "48:00:00"
+    }
+}

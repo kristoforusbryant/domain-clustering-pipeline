@@ -3,7 +3,7 @@ configfile: "config.yaml"
 
 rule targets: 
 	input:
-		expand("results/msa/{sample}.msa.a3m", sample=config["samples"]) 
+		expand("results/dca/{sample}.gplmDCA", sample=config["samples"]) 
 
 
 rule generateMSA:
@@ -12,7 +12,7 @@ rule generateMSA:
 	output:
 		"results/msa/{sample}.msa.a3m"
 	params: 
-		cpu_per_tasks="1",
+		cpu_per_tasks="10",
 		n_of_iterations="5",
 		e_value="0.001",
 		database="db/uniclust30_2017_10/uniclust30_2017_10"
@@ -22,7 +22,7 @@ rule generateMSA:
 	conda: 
 		"env/hhsuite.yaml"
 	shell: 
-		"hhblits -cpu {params.cpu_per_tasks} -n {params.n_of_iterations} -e {params.e_value} -i {input.fa} -oa3m {output} -d {params.database} 1> {log.summary}2> {log.err}"
+		"hhblits -cpu {params.cpu_per_tasks} -n {params.n_of_iterations} -e {params.e_value} -i {input.fa} -oa3m {output} -d {params.database} 1> {log.summary} 2> {log.err}"
 
 rule filterMSA_by_gap: 
 	input: 
@@ -30,16 +30,16 @@ rule filterMSA_by_gap:
 	output:
 		"results/msa/{sample}.filtered.gap.a3m"
 	shell: 
-		"cat {input.msa} | ./filterMSA_by_gap.sh > results/msa/{sample}.filtered.gap.a3m"
+		"cat {input.msa} | ./filter_by_gap.sh > {output}"
 
 rule reformatMSA: 
 	input:
 		"results/msa/{sample}.filtered.gap.a3m"
 	output:
-		"results/msa/{sample}.filtered.reformated.a3m"
+		"results/msa/{sample}.filtered.reformatted.a3m"
 	shell:
 		"cat {input} | ./reformat_a3m_fa.py |"
-		"sed 's/-/./g' > results/msa/{sample}.filtered.reformated.a3m"
+		"sed 's/-/./g' > {output}"
 
 rule filterMSA_by_count:
 	input:
@@ -49,8 +49,8 @@ rule filterMSA_by_count:
 	shell:
 		"""
 		if [ $(cat {input} | grep -c "^>") -lt 100 ]; then 
-		exit 1
-		else cp {input} results/msa/{sample}.filtered.reformated.a3m
+		echo "Stopping job due to not enough sequence in the MSA (< 100) "; exit 1 
+		else cp {input} {output}
 		fi
 		"""
 """
@@ -83,6 +83,7 @@ rule gplmDCA:
 		msa="results/msa/{sample}.filtered.count.a3m"
 	output: 
 		"results/dca/{sample}.gplmDCA"
+	threads:10
 	params: 
 		lambda_h="0.01",
 		lambda_J="0.01",
@@ -91,7 +92,7 @@ rule gplmDCA:
 		nr_of_cores="10", # may need changing depending on number of CPUs available
 		M="-1"
 	log: 
-		"results/gplmDCA/{sample.log}"
+		"results/gplmDCA/{sample}.log"
 	shell: 
 		"matlab -nodisplay -nosplash -r \"gplmDCA_asymmetric('{input.msa}', '{output}', {params.lambda_h}, {params.lambda_J}, {params.lambda_chi}, {params.reweighting_threshold}, {params.nr_of_cores}, {params.M})\" 2> {log}"
 
