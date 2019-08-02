@@ -8,7 +8,7 @@ The pipeline consists of three main processes:
 - Prediction of direct coupling between every pair of protein residues using gplmDCA 
 - Generation of protein domains clusters using spectral clustering 
 
-This pipeline can be run end-to-end -- i.e. from FASTA sequence input toa table of every residue position and their corresponding domain membership -- or can be started in from intermediate files. 
+This pipeline can be run end-to-end — i.e. from FASTA sequence input toa table of every residue position and their corresponding domain membership — or can be started in from intermediate files. 
 
 This repository also include downstream analyses which aims to inspect the possible relationship between the number and identity of ExAC mutations (Lek _et al._, 2016) and pathogenic variants.  
 
