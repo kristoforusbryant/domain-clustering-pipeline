@@ -5,8 +5,8 @@ This pipeline is designed to automate the prediction of protein domains given on
 
 The pipeline consists of three main processes: 
 - Generation of multiple sequence alignment using an iterative protein sequence search tool called hhblits   
-- Prediction of direct coupling between every pair of protein residues using gplmDCA 
-- Generation of protein domains clusters using spectral clustering 
+- Prediction of direct coupling between every pair of protein residues using [gplmDCA](https://github.com/mskwark/gplmDCA) (Feinauer _et al._, 2014; & Ekeberg _et al._, 2013)
+- Generation of protein domains clusters using spectral clustering (Ponzoni, 2015)
 
 This pipeline can be run end-to-end — i.e. from FASTA sequence input toa table of every residue position and their corresponding domain membership — or can be started in from intermediate files. 
 
@@ -53,10 +53,24 @@ where `-j 100` means that you only allow a maxiumum of 100 jobs to be run simult
 The result along with all intermediate and log files can be found in the `results/` directory, where the final result of every residue's domain membership is found in `results/clustering`. 
 
 ## Analysis 
-
+### Data
 
 
 ## Bibliography 
-  Granata, D., Ponzoni, L., Micheletti, C., & Carnevale, V. (2017). Patterns of coevolving amino acids unveil structural and dynamical domains. Proceedings of the National Academy of Sciences, 114(50), E10612-E10621.
+  Feinauer, C., Skwark, M. J., Pagnani, A., & Aurell, E. (2014). Improving contact prediction along three dimensions. PLoS computational
+  biology, 10(10), e1003847.
+  
+  Granata, D., Ponzoni, L., Micheletti, C., & Carnevale, V. (2017). Patterns of coevolving amino acids unveil structural and dynamical 
+  domains. Proceedings of the National Academy of Sciences, 114(50), E10612-E10621.
+  
   Köster, J., & Rahmann, S. (2012). Snakemake—a scalable bioinformatics workflow engine. Bioinformatics, 28(19), 2520-2522.
-  Lek, M., Karczewski, K. J., Minikel, E. V., Samocha, K. E., Banks, E., Fennell, T., ... & Tukiainen, T. (2016). Analysis of protein-coding genetic variation in 60,706 humans. Nature, 536(7616), 285.
+  
+  Lek, M., Karczewski, K. J., Minikel, E. V., Samocha, K. E., Banks, E., Fennell, T., ... & Tukiainen, T. (2016). Analysis of protein-coding 
+  genetic variation in 60,706 humans. Nature, 536(7616), 285.
+  
+  Ekeberg, M., Lövkvist, C., Lan, Y., Weigt, M., & Aurell, E. (2013). Improved contact prediction in proteins: using pseudolikelihoods to   
+  infer Potts models. Physical Review E, 87(1), 012707.
+  
+  Ponzoni, L., Polles, G., Carnevale, V., & Micheletti, C. (2015). SPECTRUS: A dimensionality reduction approach for identifying dynamical   
+  domains in protein complexes from limited structural datasets. Structure, 23(8), 1516-1525.
+  
