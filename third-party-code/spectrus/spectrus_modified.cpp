@@ -121,8 +121,8 @@ int main(int argc, char* argv[])
   }
   fin.close();
 
-  sprintf(test_filename, "test/results/%s_parsed_mtx.txt", fname);
-  print_matrix(sim_matrix_raw, test_filename, n_atoms);  
+  // sprintf(test_filename, "test/results/%s_parsed_mtx.txt", fname);
+  // print_matrix(sim_matrix_raw, test_filename, n_atoms);  
  
   vector<int> top_k(keep_k);
   vector<double> temp_vec(n_atoms, 0.);
@@ -157,8 +157,8 @@ int main(int argc, char* argv[])
      }
   }
  
-  sprintf(test_filename, "test/results/%s_sim_mtx.txt", fname);
-  print_matrix(sim_matrix, test_filename, n_atoms);
+  // sprintf(test_filename, "test/results/%s_sim_mtx.txt", fname);
+  // print_matrix(sim_matrix, test_filename, n_atoms);
 
   // compute the sum of each row (degree matrix)
   vector<double> diag(n_atoms,0.0);
@@ -186,23 +186,6 @@ int main(int argc, char* argv[])
     }
   }
  
-  sprintf(test_filename, "test/results/%s_lap_mtx.txt", fname); 
-  fp = fopen(test_filename, "w"); 
-  for (int i=0; i < n_atoms; ++i) {
-    for(int j=0; j < laplacian_matrix.getRow(i).size(); ++j){ fprintf(fp,"%f,", laplacian_matrix.getRow(i)[j]); } 
-    fprintf(fp, "\n");
-  }
-  fclose(fp);
-
-  //printf("laplacian matrix at position 0,0 %f", laplacian_matrix.at(0,0));
-  //printf("laplacian matrix at position 0,0 %f", laplacian_matrix.at(2,2));
-  //printf("laplacian matrix at position 0,0 %f", laplacian_matrix.at(3,7));
-  //printf("laplacian matrix at position 0,0 %f", laplacian_matrix.at(20,30));
-  //printf("laplacian matrix at position 0,0 %f", laplacian_matrix.at(n_atoms,n_atoms-1));
-
- 
-  //sprintf(test_filename, "test/results/%s_lap_mtx.txt", fname); 
-  //laplacian_matrix.saveToFile(test_filename); 
   
   // create "/results" directory
     // system("if [ ! -d results ]; then mkdir results; fi");

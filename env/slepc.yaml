@@ -1,5 +1,0 @@
-channels:
-	- conda-forge
-dependencies: 
-	- petsc =3.11.1
-	- slepc =3.11.1

@@ -1,24 +1,33 @@
-configfile: "config.yaml"
+import json
+with open('sample_list.dat', 'r') as filename:
+	samples=[row[:-1] for row in filename]
+with open('params.json', 'r') as filename: 
+	params=json.loads(filename.read())
+
+
+#configfile: "config.yaml"
 #expand("results/plots/{sample}.SC.clustering.plot", sample=fasta_names["samples"])
 
 rule targets: 
 	input:
-		expand("results/dca/{sample}.gplmDCA", sample=config["samples"]) 
-
-
+		expand("results/clustering/{sample}.SC", sample=samples), 
+		expand("results/plots/{sample}.SC.clustering.png", sample=samples), 
+		expand("results/plots/{sample}.SC.quality.png", sample=samples) 
+		
 rule generateMSA:
 	input:
 		fa="fasta_input/{sample}.fa"
 	output:
 		"results/msa/{sample}.msa.a3m"
 	params: 
-		cpu_per_tasks="10",
-		n_of_iterations="5",
-		e_value="0.001",
-		database="db/uniclust30_2017_10/uniclust30_2017_10"
+		cpu_per_tasks=params["hhblits"]["cpu_per_task"],
+		n_of_iterations=params["hhblits"]["n_of_iterations"],
+		e_value=params["hhblits"]["e_value"],
+		database=params["hhblits"]["database"]
 	log:
 		err="results/logs/generateMSA/{sample}.error.log", 
 		summary="results/logs/generateMSA/{sample}.summary.log"
+	threads:params["hhblits"]["cpu_per_task"]
 	conda: 
 		"env/hhsuite.yaml"
 	shell: 
@@ -49,7 +58,10 @@ rule filterMSA_by_count:
 	shell:
 		"""
 		if [ $(cat {input} | grep -c "^>") -lt 100 ]; then 
-		echo "Stopping job due to not enough sequence in the MSA (< 100) "; exit 1 
+			echo "Stopping job due to not enough sequence in the MSA (< 100) "
+			sample=$(echo {input} | sed 's/.*\///' | sed 's/.filtered.reformatted.a3m//'); echo $sample
+			sed -i '/$sample/d' sample_list.dat && echo "$sample FAILED: TOO FEW MSA SEQUENCES" >> fasta_done.dat
+			exit 1 
 		else cp {input} {output}
 		fi
 		"""
@@ -83,14 +95,14 @@ rule gplmDCA:
 		msa="results/msa/{sample}.filtered.count.a3m"
 	output: 
 		"results/dca/{sample}.gplmDCA"
-	threads:10
+	threads:params["gplmDCA"]["nr_of_cores"]
 	params: 
-		lambda_h="0.01",
-		lambda_J="0.01",
-		lambda_chi="0.001",
-		reweighting_threshold="0.1",
-		nr_of_cores="10", # may need changing depending on number of CPUs available
-		M="-1"
+		lambda_h=params["gplmDCA"]["lambda_h"],
+		lambda_J=params["gplmDCA"]["lambda_J"],
+		lambda_chi=params["gplmDCA"]["lambda_chi"],
+		reweighting_threshold=params["gplmDCA"]["reweighting_threshold"],
+		nr_of_cores=params["gplmDCA"]["nr_of_cores"], 
+		M=params["gplmDCA"]["M"]
 	log: 
 		"results/gplmDCA/{sample}.log"
 	shell: 
@@ -98,21 +110,25 @@ rule gplmDCA:
 
 rule spectral_clustering: 
 	input: 
-		"results/dca/{sample}.gplmDCA"
+		dca="results/dca/{sample}.gplmDCA"
 	output:
 		clust="results/clustering/{sample}.SC",
-		stats="results/clustering_stats/{sample}.SCstats"
-	conda: 
-		"env/slepc.yaml"
+		stats="results/clustering_stats/{sample}.SCstats",
+		toplot="results/clustering_stats/results_{sample}"
+	conda:
+		"env/spectrus.yaml"
 	shell:
 		"""
-		cp -r ./spectrus_slim/ ./spectrus_slim_{sample}
-		./cluster_spectrus.sh {input} {sample} {output.clust} 2> {output.stats}
-		"""  # this command (and cluster_spectrus.sh) is a little hack-y
+		sample=$(echo {input.dca} | sed 's/.*\///' | sed 's/.gplmDCA//')
+		./cluster_spectrus.sh {input.dca} $sample {output.clust} results/clustering_stats/ > {output.stats} &&
+		sed -i '/$sample/d' sample_list.dat && echo "$sample OK" >> fasta_done.dat
+		rm -rf results/clustering_stats/results_$sample
+		mv -f results_"$sample".temp/ {output.toplot}
+		""" 
 
 rule output_graph: 
 	input: 
-		SC="results/clustering/{sample}.SC"
+		SC="results/clustering_stats/results_{sample}"
 	output: 
 		clust="results/plots/{sample}.SC.clustering.png", 
 		qual="results/plots/{sample}.SC.quality.png"

@@ -1,0 +1,17 @@
+{
+"hhblits" :{
+        "cpu_per_task": 10,
+        "n_of_iterations": 5,
+        "e_value": 0.001, 
+        "database": "db/uniclust30_2017_10/uniclust30_2017_10"
+	}, 
+"gplmDCA" :{
+        "nr_of_cores": 10,
+        "lambda_h": 0.01, 
+        "lambda_J": 0.01,
+        "lambda_chi": 0.001, 
+        "reweighting_threshold": 0.1,
+        "M": -1 
+	}
+}
+

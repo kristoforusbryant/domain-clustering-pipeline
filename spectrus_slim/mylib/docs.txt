@@ -1,0 +1,53 @@
+PdbAtomInfo contains :
+public:
+  int serial;
+  char name[5];
+  char altloc;
+  char resName[5];
+  char chainId;
+  int resSeq;
+  char iCode;
+  double x,y,z;
+  double occupancy;
+  double tempFactor;
+  char element[3];
+  char charge[3];
+  
+
+PdbIoWrapper :
+  
+  example in: 
+  
+    PdbIoWrapper pdb;
+    pdb.openAsInput(fname);
+    PdbAtomInfo info;
+    while(pdb.nextAtom(&info)) {
+      cout << Vector3d(info.x,info.y,info.z) << endl;
+    }
+  
+  example out:
+    PdbIoWrapper pdb;
+    pdb.openAsOutput(fname);
+    PdbAtomInfo info;
+    info.name = 'C'
+    info.resName = "GLY"
+    for (size_t i = 0; i < x.size(); ++i){
+        info.x = x[i].X;
+        info.y = x[i].Y;
+        info.z = x[i].Z;
+        info.resSeq = i+1;
+        info.serial = i+1;
+        pdb.writeAtom(info);
+    }
+    
+PdbFile:
+  example:
+    PdbFile pdb("trefoil.pdb");
+    vector<Vector3d> c = pdb.getCoords();
+    vector<string> s =  pdb.getAtomNames();
+    pdb.close();
+    
+    for (size_t i=0; i<c.size(); ++i){
+            cout << s[i] << c[i] << endl;
+    }
+
