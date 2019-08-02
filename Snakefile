@@ -1,5 +1,9 @@
+import json
 with open('fasta_list.dat', 'r') as filename:
 	samples=[row[:-1] for row in filename]
+with open('params.json', 'r') as filename: 
+	params=json.loads(filename.read())
+
 
 #configfile: "config.yaml"
 #expand("results/plots/{sample}.SC.clustering.plot", sample=fasta_names["samples"])
@@ -15,14 +19,14 @@ rule generateMSA:
 	output:
 		"results/msa/{sample}.msa.a3m"
 	params: 
-		cpu_per_tasks="10",
-		n_of_iterations="5",
-		e_value="0.001",
-		database="db/uniclust30_2017_10/uniclust30_2017_10"
+		cpu_per_tasks=params["hhblits"]["cpu_per_task"],
+		n_of_iterations=params["hhblits"]["n_of_iterations"],
+		e_value=params["hhblits"]["e_value"],
+		database=params["hhblits"]["database"]
 	log:
 		err="results/logs/generateMSA/{sample}.error.log", 
 		summary="results/logs/generateMSA/{sample}.summary.log"
-	threads:10 
+	threads:params["hhblits"]["cpu_per_task"]
 	conda: 
 		"env/hhsuite.yaml"
 	shell: 
@@ -87,14 +91,14 @@ rule gplmDCA:
 		msa="results/msa/{sample}.filtered.count.a3m"
 	output: 
 		"results/dca/{sample}.gplmDCA"
-	threads:10
+	threads:params["gplmDCA"]["nr_of_cores"]
 	params: 
-		lambda_h="0.01",
-		lambda_J="0.01",
-		lambda_chi="0.001",
-		reweighting_threshold="0.1",
-		nr_of_cores="10", # may need changing depending on number of CPUs available
-		M="-1"
+		lambda_h=params["gplmDCA"]["lambda_h"],
+		lambda_J=params["gplmDCA"]["lambda_J"],
+		lambda_chi=params["gplmDCA"]["lambda_chi"],
+		reweighting_threshold=params["gplmDCA"]["reweighting_threshold"],
+		nr_of_cores=params["gplmDCA"]["nr_of_cores"], 
+		M=params["gplmDCA"]["M"]
 	log: 
 		"results/gplmDCA/{sample}.log"
 	shell: 
@@ -106,14 +110,13 @@ rule spectral_clustering:
 	output:
 		clust="results/clustering/{sample}.SC",
 		stats="results/clustering_stats/{sample}.SCstats"
-	conda: 
-		"env/slepc.yaml"
+	conda:
+		"env/spectrus.yaml"
 	shell:
 		"""
 		sample=$(echo {input.dca} | sed 's/.*\///' | sed 's/.gplmDCA//')
-		cp -r ./spectrus_slim/ ./spectrus_slim_$sample
-		./cluster_spectrus.sh {input.dca} $sample {output.clust} 2> {output.stats}
-		"""  # this command (and cluster_spectrus.sh) is a little hack-y
+		./cluster_spectrus.sh {input.dca} $sample {output.clust} results/clustering_stats/ > {output.stats}
+		""" 
 
 rule output_graph: 
 	input: 
