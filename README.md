@@ -50,7 +50,7 @@ snakemake -k -j 100 --use-conda --cluster-config cluster.json --cluster "sbatch 
 where `-j 100` means that you only allow a maxiumum of 100 jobs to be run simultaneously on the cluster. 
 
 ## Results 
-The result along with all intermediate and log files can be found in the `results/` directory, where the final result of every residue's domain membership is found in `results/clustering`. 
+The result along with all intermediate and log files can be found in the `results/` directory, where the final result (every residue's domain membership in the protein) is found in `results/clustering`. 
 
 ## Analysis 
 ### Data
