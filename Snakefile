@@ -134,6 +134,7 @@ rule output_graph:
 		qual="results/plots/{sample}.SC.quality.png"
 	conda:
 		"env/Rplot.yaml"
-	shell: 
-		"Rscript {input.SC} {output.clust} {output.qual}"
-
+	shell: """
+		mkdir -p results/plots;
+		Rscript {input.SC} {output.clust} {output.qual}
+		"""
