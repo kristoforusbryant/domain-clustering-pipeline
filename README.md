@@ -24,17 +24,9 @@ conda install -c bioconda -c conda-forge snakemake
 Also, hhblits requires a database to be downloaded for which they recommend [UniClust30](https://uniclust.mmseqs.com/). Download this database into the `db/` directory.    
 
 ## Running the pipeline on local machine
-On the local machine you could simply run the pipeline by firstly populating the `config.yaml` file with the name of your fasta files (without the .fa suffix). You would also need to modify the database you use accordingly.
-```
-samples: 
-  - protein-sequence-1
-  - protein-sequence-2
-  - protein-sequence-3
-  ...
-database: 
-  - uniclust30_2018_08
-```
-and run 
+On the local machine you could simply run the pipeline by firstly populating the `fasta_list.dat` file with linebreak-delimieted name of your fasta files (without the .fa suffix). You would also need to modify the parameters in `params.json`.
+
+Once those are done, you can run 
 ```
 snakemake -k --use-conda 
 ```
@@ -51,9 +43,9 @@ For parallelise implementation on a compute cluster, you would need to create a 
     }
 }          
 ```
-then you can simply run
+then, simply run
 ```
-snakemake -k -j 100 --use-conda --cluster-config cluster.json --cluster "sbatch -p {cluster.partition} --mem={cluster.mem} -t {cluster.time} -c {thread}"
+snakemake -k -j 100 --use-conda --cluster-config cluster.json --cluster "sbatch -p {cluster.partition} --mem={cluster.mem} -t {cluster.time} -c {threads}"
 ```
 where `-j 100` means that you only allow a maxiumum of 100 jobs to be run simultaneously on the cluster. 
 
