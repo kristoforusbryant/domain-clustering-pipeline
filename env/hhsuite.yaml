@@ -1,4 +1,4 @@
 channels:
-	- bioconda 
+- bioconda 
 dependencies: 
-	- hhsuite =3.1.0
+- hhsuite 
