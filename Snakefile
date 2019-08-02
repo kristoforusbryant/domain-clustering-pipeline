@@ -1,9 +1,12 @@
-configfile: "config.yaml"
+with open('fasta_list.dat', 'r') as filename:
+	samples=[row[:-1] for row in filename]
+
+#configfile: "config.yaml"
 #expand("results/plots/{sample}.SC.clustering.plot", sample=fasta_names["samples"])
 
 rule targets: 
 	input:
-		expand("results/dca/{sample}.gplmDCA", sample=config["samples"]) 
+		expand("results/clustering/{sample}.SC", sample=samples) 
 
 
 rule generateMSA:
@@ -19,6 +22,7 @@ rule generateMSA:
 	log:
 		err="results/logs/generateMSA/{sample}.error.log", 
 		summary="results/logs/generateMSA/{sample}.summary.log"
+	threads:10 
 	conda: 
 		"env/hhsuite.yaml"
 	shell: 
@@ -98,7 +102,7 @@ rule gplmDCA:
 
 rule spectral_clustering: 
 	input: 
-		"results/dca/{sample}.gplmDCA"
+		dca="results/dca/{sample}.gplmDCA"
 	output:
 		clust="results/clustering/{sample}.SC",
 		stats="results/clustering_stats/{sample}.SCstats"
@@ -106,8 +110,9 @@ rule spectral_clustering:
 		"env/slepc.yaml"
 	shell:
 		"""
-		cp -r ./spectrus_slim/ ./spectrus_slim_{sample}
-		./cluster_spectrus.sh {input} {sample} {output.clust} 2> {output.stats}
+		sample=$(echo {input.dca} | sed 's/.*\///' | sed 's/.gplmDCA//')
+		cp -r ./spectrus_slim/ ./spectrus_slim_$sample
+		./cluster_spectrus.sh {input.dca} $sample {output.clust} 2> {output.stats}
 		"""  # this command (and cluster_spectrus.sh) is a little hack-y
 
 rule output_graph: 
