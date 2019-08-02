@@ -10,7 +10,7 @@ The pipeline consists of three main processes:
 
 This pipeline can be run end-to-end — i.e. from FASTA sequence input toa table of every residue position and their corresponding domain membership — or can be started in from intermediate files. 
 
-This repository also include downstream analyses which aims to inspect the possible relationship between the number and identity of ExAC mutations (Lek _et al._, 2016) and pathogenic variants.  
+This repository also include RMarkdown files we use for our downstream analyses which aims to inspect the possible relationship between the number and identity of ExAC mutations (Lek _et al._, 2016) and pathogenic variants.  
 
 ## Dependencies
 Python, Conda, MATLAB
