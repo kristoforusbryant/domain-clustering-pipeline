@@ -1,5 +1,5 @@
 import json
-with open('fasta_list.dat', 'r') as filename:
+with open('sample_list.dat', 'r') as filename:
 	samples=[row[:-1] for row in filename]
 with open('params.json', 'r') as filename: 
 	params=json.loads(filename.read())
@@ -10,9 +10,10 @@ with open('params.json', 'r') as filename:
 
 rule targets: 
 	input:
-		expand("results/clustering/{sample}.SC", sample=samples) 
-
-
+		expand("results/clustering/{sample}.SC", sample=samples), 
+		expand("results/plots/{sample}.SC.clustering.png", sample=samples), 
+		expand("results/plots/{sample}.SC.quality.png", sample=samples) 
+		
 rule generateMSA:
 	input:
 		fa="fasta_input/{sample}.fa"
@@ -57,7 +58,10 @@ rule filterMSA_by_count:
 	shell:
 		"""
 		if [ $(cat {input} | grep -c "^>") -lt 100 ]; then 
-		echo "Stopping job due to not enough sequence in the MSA (< 100) "; exit 1 
+			echo "Stopping job due to not enough sequence in the MSA (< 100) "
+			sample=$(echo {input} | sed 's/.*\///' | sed 's/.filtered.reformatted.a3m//'); echo $sample
+			sed -i '/$sample/d' sample_list.dat && echo "$sample FAILED: TOO FEW MSA SEQUENCES" >> fasta_done.dat
+			exit 1 
 		else cp {input} {output}
 		fi
 		"""
@@ -109,18 +113,22 @@ rule spectral_clustering:
 		dca="results/dca/{sample}.gplmDCA"
 	output:
 		clust="results/clustering/{sample}.SC",
-		stats="results/clustering_stats/{sample}.SCstats"
+		stats="results/clustering_stats/{sample}.SCstats",
+		toplot="results/clustering_stats/results_{sample}"
 	conda:
 		"env/spectrus.yaml"
 	shell:
 		"""
 		sample=$(echo {input.dca} | sed 's/.*\///' | sed 's/.gplmDCA//')
-		./cluster_spectrus.sh {input.dca} $sample {output.clust} results/clustering_stats/ > {output.stats}
+		./cluster_spectrus.sh {input.dca} $sample {output.clust} results/clustering_stats/ > {output.stats} &&
+		sed -i '/$sample/d' sample_list.dat && echo "$sample OK" >> fasta_done.dat
+		rm -rf results/clustering_stats/results_$sample
+		mv -f results_"$sample".temp/ {output.toplot}
 		""" 
 
 rule output_graph: 
 	input: 
-		SC="results/clustering/{sample}.SC"
+		SC="results/clustering_stats/results_{sample}"
 	output: 
 		clust="results/plots/{sample}.SC.clustering.png", 
 		qual="results/plots/{sample}.SC.quality.png"

@@ -35,6 +35,6 @@ best_cluster=$(cat results_${sample}.temp/quality_score.dat | sort -k2 -g -r | h
 mv results_${sample}.temp/final_labels_kmed-${best_cluster}.dat ${output}
 
 # move results directory to results directory 
-rm -rf results/clustering_stats/results_${sample}.temp
-mv -f results_${sample}.temp/ results/clustering_stats/
+rm -rf results/clustering_stats/results_${sample}
+mv -f results_${sample}.temp/ results/clustering_stats/results_${sample}
 rm ${sample}.temp
