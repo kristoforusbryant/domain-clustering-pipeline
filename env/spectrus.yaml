@@ -3,5 +3,3 @@ channels:
 dependencies: 
 - gxx_linux-64
 - openmpi
-- petsc =3.11.1
-- slepc =3.11.1
