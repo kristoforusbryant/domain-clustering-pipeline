@@ -53,7 +53,6 @@ int main (int argc, char *argv[])
   FILE *input;
   FILE *output;
   FILE *logfile;
-  FILE *edgeConnectivityMatrixFile;
 
   if (argc != 3) {
     /*printf("Error in number of arguments. \n");*/
@@ -79,13 +78,10 @@ int main (int argc, char *argv[])
   strcat (output_log_name, argv[2]);
   logfile = fopen(output_log_name, "w");
 
-
-
-
   char betweenness_file_name[100];
   strcpy (betweenness_file_name,"betweenness_");
   strcat (betweenness_file_name, argv[2]);
-  edgeConnectivityMatrixFile = fopen(betweenness_file_name, "w");
+  //edgeConnectivityMatrixFile = fopen(betweenness_file_name, "w");
   proteinPtr = &protein;
   get(proteinPtr, input);
   getEdges(proteinPtr);
@@ -99,8 +95,8 @@ int main (int argc, char *argv[])
   floydWarshall(proteinPtr, residues, residueCount);
   
   edgeConnectivity(proteinPtr, residues, residueCount);
-  printEdgeConnectivities(proteinPtr, edgeConnectivityMatrixFile);
-  fclose(edgeConnectivityMatrixFile);
+  //printEdgeConnectivities(proteinPtr, edgeConnectivityMatrixFile);
+  //fclose(edgeConnectivityMatrixFile);
 
   protein.Community=NULL;
 
@@ -109,7 +105,7 @@ int main (int argc, char *argv[])
   strcpy (community_tcl_fl,"Community_");
   strcat (community_tcl_fl, argv[2]);
   strcat (community_tcl_fl, ".tcl");
-  gnewman(&protein, output, logfile, community_tcl_fl);
+  gnewman(&protein, output, community_tcl_fl);
   /* */
   
   fclose(output);
@@ -119,8 +115,8 @@ int main (int argc, char *argv[])
   /*getComm(protein, input);*/
   
   /* REACTIVATE */  
-  getFlowComm(protein, logfile);
-  getIntercommunityFlow(protein, logfile);
+  // getFlowComm(protein, logfile);
+  // getIntercommunityFlow(protein, logfile);
   /* */
 
   /*nodeConnectivity(proteinPtr);*/

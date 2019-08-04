@@ -1,0 +1,54 @@
+./Graph.c:	newPtr->next = comm->leaf[i];
+./Graph.c:	newPtr->residue = tempGraph->nres + numCommPrev - 1;
+./Graph.c:  newPtr->residue = tempGraph->nres;
+./Graph.c:  newPtr->next = NULL;
+./Graph.c:      newPtr->next = protein->Community->leaf[tempGraph->edge[edgeMax]->res2];
+./Graph.c:      newPtr->residue = tempGraph->nres + numCommPrev - 1;
+./Graph.c:	printf("newPtr->residue = %d\n",newPtr->residue);*/
+./Graph.c:      while ((newPtr->residue) >= (tempGraph->nres + numComm)) {
+./Graph.c:	newPtr = newPtr->next;
+./Graph.c:	printf("newPtr->residue = %d\n",newPtr->residue);
+./Graph.c:      if (newPtr->residue == (tempGraph->nres + i)) {
+./Graph.c:      //printf("newPtr->residue = %d\n",newPtr->residue);
+./Graph.c:      while ((newPtr->residue) >= (tempGraph->nres + numComm)) {
+./Graph.c:	newPtr = newPtr->next;
+./Graph.c:	//printf("newPtr->residue = %d\n",newPtr->residue);
+./Graph.c:      if (newPtr->residue == (tempGraph->nres + i)) {
+./Graph.c:	while (newPtr->residue > tempGraph->nres + 1) {
+./Graph.c:	    currentCommunity = newPtr->residue - tempGraph->nres + 1;
+./Graph.c:	    parentCommunity = newPtr->residue - tempGraph->nres + 1;
+./Graph.c:	  fprintf(output3, "%d ", newPtr->residue - tempGraph->nres + 1);
+./Graph.c:	  printf("%d ", newPtr->residue - tempGraph->nres + 1);
+./Graph.c:	  newPtr = newPtr->next;
+./Graph.c:	  currentCommunity = newPtr->residue - tempGraph->nres + 1;
+./Graph.c:	  parentCommunity = newPtr->residue - tempGraph->nres + 1;
+./Graph.c:	fprintf(output3, "%d ", newPtr->residue - tempGraph->nres + 1);
+./Graph.c:	printf("%d ", newPtr->residue - tempGraph->nres + 1);
+./Graph_ORIG.c:	newPtr->next = comm->leaf[i];
+./Graph_ORIG.c:	newPtr->residue = tempGraph->nres + numCommPrev - 1;
+./Graph_ORIG.c:  newPtr->residue = tempGraph->nres;
+./Graph_ORIG.c:  newPtr->next = NULL;
+./Graph_ORIG.c:      newPtr->next = protein->Community->leaf[tempGraph->edge[edgeMax]->res2];
+./Graph_ORIG.c:      newPtr->residue = tempGraph->nres + numCommPrev - 1;
+./Graph_ORIG.c:	printf("newPtr->residue = %d\n",newPtr->residue);*/
+./Graph_ORIG.c:      while ((newPtr->residue) >= (tempGraph->nres + numComm)) {
+./Graph_ORIG.c:	newPtr = newPtr->next;
+./Graph_ORIG.c:	printf("newPtr->residue = %d\n",newPtr->residue);
+./Graph_ORIG.c:      if (newPtr->residue == (tempGraph->nres + i)) {
+./Graph_ORIG.c:      //printf("newPtr->residue = %d\n",newPtr->residue);
+./Graph_ORIG.c:      while ((newPtr->residue) >= (tempGraph->nres + numComm)) {
+./Graph_ORIG.c:	newPtr = newPtr->next;
+./Graph_ORIG.c:	//printf("newPtr->residue = %d\n",newPtr->residue);
+./Graph_ORIG.c:      if (newPtr->residue == (tempGraph->nres + i)) {
+./Graph_ORIG.c:	while (newPtr->residue > tempGraph->nres + 1) {
+./Graph_ORIG.c:	    currentCommunity = newPtr->residue - tempGraph->nres + 1;
+./Graph_ORIG.c:	    parentCommunity = newPtr->residue - tempGraph->nres + 1;
+./Graph_ORIG.c:	  fprintf(output3, "%d ", newPtr->residue - tempGraph->nres + 1);
+./Graph_ORIG.c:	  printf("%d ", newPtr->residue - tempGraph->nres + 1);
+./Graph_ORIG.c:	  newPtr = newPtr->next;
+./Graph_ORIG.c:	  currentCommunity = newPtr->residue - tempGraph->nres + 1;
+./Graph_ORIG.c:	  parentCommunity = newPtr->residue - tempGraph->nres + 1;
+./Graph_ORIG.c:	fprintf(output3, "%d ", newPtr->residue - tempGraph->nres + 1);
+./Graph_ORIG.c:	printf("%d ", newPtr->residue - tempGraph->nres + 1);
+./List.c:  newPtr->residue = i;
+./List.c:  newPtr->next = NULL;

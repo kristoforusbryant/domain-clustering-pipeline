@@ -1065,7 +1065,7 @@ void addNodeToCommunityTree(Graph *proteinGraph, Graph *tempGraph, int numComm, 
 }
 
 
-void gnewman(Graph *protein, FILE *output3, FILE *output4, char *community_tcl_fl)
+void gnewman(Graph *protein, FILE *output3, char *community_tcl_fl)
 {
   printf("->gnewman\n");
   Graph *tempGraph = copyGraph(protein); /* Copy of protein; protein stays in original form. */
@@ -1213,12 +1213,12 @@ void gnewman(Graph *protein, FILE *output3, FILE *output4, char *community_tcl_f
   /* numComm needs to have the number of communities, not the associated index
      of the 0-indexed array. */
   numComm++;
-  fprintf(output3, "The optimum number of communities is %d and modularity value is %f\n", numComm, protein->Community->optQ);
+  printf("The optimum number of communities is %d and modularity value is %f\n", numComm, protein->Community->optQ);
   protein->Community->communityNumber = numComm;
 
   /* Print out communities with the residues they contain. */
   for (i=0; i<numComm; i++) {
-    fprintf(output3, "The residues in community %d are: ", (i+1));
+    // fprintf(output3, "The residues in community %d are: ", (i+1));
     printf("The residues in community %d are: ", (i+1));
     for (j=0; j<tempGraph->nres; j++) {
       newPtr = protein->Community->leaf[j];
@@ -1230,11 +1230,11 @@ void gnewman(Graph *protein, FILE *output3, FILE *output4, char *community_tcl_f
       }
       if (newPtr->residue == (tempGraph->nres + i)) {
 	/*printf("^^^\n");*/
-	fprintf(output3, "%d ", j);
+	fprintf(output3, "%d %d\n", (j+1), (i+1));
 	protein->Community->community[j] = i;
       }
     }
-    fprintf(output3, "\n");
+    //fprintf(output3, "\n");
   }
 	
   /* Find edges with the most edge Connectivity for communication within each
@@ -1282,14 +1282,14 @@ void gnewman(Graph *protein, FILE *output3, FILE *output4, char *community_tcl_f
   for (i=0; i<numComm; i++) {
     for (j=(i+1); j<numComm; j++) {
       if (edgeComm[i][j] != 0) {
-	fprintf(output3, "The highest score in edge connectivities between communities %d and %d with highest edge connectivity is %f\n", (i+1), (j+1), edgeComm[i][j]);
+	printf("The highest score in edge connectivities between communities %d and %d with highest edge connectivity is %f\n", (i+1), (j+1), edgeComm[i][j]);
 	for (i1=0; i1<protein->nedges; i1++) {
 	  if ((((protein->Community->community[protein->edge[i1]->res1] == i) &&
 		(protein->Community->community[protein->edge[i1]->res2] == j)) ||
 	       ((protein->Community->community[protein->edge[i1]->res1] == j) &&
 		(protein->Community->community[protein->edge[i1]->res2] == i))) &&
 	      (protein->edge[i1]->edgeConn >= 0.75 * edgeComm[protein->Community->community[protein->edge[i1]->res1]][protein->Community->community[protein->edge[i1]->res2]])) {
-	    fprintf(output3, "%d %d %f \n", (protein->edge[i1]->res1), (protein->edge[i1]->res2), protein->edge[i1]->edgeConn);
+	    //fprintf(output3, "%d %d %f \n", (protein->edge[i1]->res1), (protein->edge[i1]->res2), protein->edge[i1]->edgeConn);
 	    fprintf(output2, "mol representation VDW 1.000000 8.000000\n");
 	    fprintf(output2, "mol color ColorID %d\n", protein->Community->community[protein->edge[i1]->res1]);
 	    fprintf(output2, "mol selection {residue %d and name CA P}\n", protein->edge[i1]->res1);
@@ -1315,7 +1315,7 @@ void gnewman(Graph *protein, FILE *output3, FILE *output4, char *community_tcl_f
   fclose(output2);
 
   /* Print out community tree. */
-  fprintf(output3, "Community Tree\n");
+  //fprintf(output3, "Community Tree\n");
   printf("Community Tree\n");
   treePtr* treeArray = malloc((numComm+1)*sizeof(treePtr));
   for (i=0; i<=numComm; i++) {
@@ -1326,18 +1326,16 @@ void gnewman(Graph *protein, FILE *output3, FILE *output4, char *community_tcl_f
   for (i=0; i<numComm; i++) {
     int currentCommunity = 1;
     int parentCommunity = 1;
-    fprintf(output3, "Community list for community %d is: ", (i+1));
+    //fprintf(output3, "Community list for community %d is: ", (i+1));
     printf("Community list for community %d is: ", (i+1));
     for (j=0; j<tempGraph->nres; j++) {
       newPtr = protein->Community->leaf[j];
-      //printf("j=%d ", j);
-      //printf("newPtr->residue = %d\n",newPtr->residue);
+      
       while ((newPtr->residue) >= (tempGraph->nres + numComm)) {
 	newPtr = newPtr->next;
-	//printf("newPtr->residue = %d\n",newPtr->residue);
       }
       if (newPtr->residue == (tempGraph->nres + i)) {
-	fprintf(output3, "%d: ", j);
+	//fprintf(output3, "%d: ", j);
 	printf("%d: ", j);
 	while (newPtr->residue > tempGraph->nres + 1) {
 	  //printf("^^^\n");
@@ -1346,7 +1344,7 @@ void gnewman(Graph *protein, FILE *output3, FILE *output4, char *community_tcl_f
 	  } else if (parentCommunity == 1) {
 	    parentCommunity = newPtr->residue - tempGraph->nres + 1;
 	  }
-	  fprintf(output3, "%d ", newPtr->residue - tempGraph->nres + 1);
+	  //fprintf(output3, "%d ", newPtr->residue - tempGraph->nres + 1);
 	  printf("%d ", newPtr->residue - tempGraph->nres + 1);
 	  newPtr = newPtr->next;
 	}
@@ -1355,14 +1353,8 @@ void gnewman(Graph *protein, FILE *output3, FILE *output4, char *community_tcl_f
 	} else if (parentCommunity == 1) {
 	  parentCommunity = newPtr->residue - tempGraph->nres + 1;
 	}
-	fprintf(output3, "%d ", newPtr->residue - tempGraph->nres + 1);
+	//fprintf(output3, "%d ", newPtr->residue - tempGraph->nres + 1);
 	printf("%d ", newPtr->residue - tempGraph->nres + 1);
-	/*fprintf(output3, "currentCommunity: %d, parentCommunity: %d\n",currentCommunity,parentCommunity);
-	printf("currentCommunity: %d, parentCommunity: %d\n",currentCommunity,parentCommunity);
-	fprintTree(output3, treeArray[0]);
-	printTree(treeArray[0]);
-	fprintf(output3, "\n");
-	printf("\n");*/
 	if (currentCommunity > 1) {
 	  treePtr child1 = addChild(treeArray[parentCommunity],1,parentCommunity);
 	  treeArray[currentCommunity] = addChild(treeArray[parentCommunity],2,currentCommunity);
@@ -1371,607 +1363,21 @@ void gnewman(Graph *protein, FILE *output3, FILE *output4, char *community_tcl_f
 	break;
       }
     }
-    fprintf(output3, "\n");
+    //fprintf(output3, "\n");
     printf("\n");
   }
-  //fprintf(output3, "Printing Community Tree\n");
-  //printf("Printing Community Tree\n");
-  fprintTree(output3, treeArray[0]);
+  
+  // fprintTree(output3, treeArray[0]);
   printTree(treeArray[0]);
   deleteTree(treeArray[0]);
   free(treeArray);
-  
-  fprintf(output4, "Community Membership\n");
-  for (i=0; i<protein->nres; i++) {
-    fprintf(output4, "%d %d\n", i, protein->Community->community[i]);
-  }
-  
-  fprintf(output4, "Modularity Score\n");
-  for (i=0; i<protein->nres; i++) {
-    fprintf(output4, "%d %.4f\n", i, protein->Community->Q[i]);
-  }
-  
+    
   free(residues);
   free(edgeComm);
 
   printf("<-gnewman\n");
   return;
 }
-
-
-void getComm(Graph protein, FILE *input)
-{
-  printf("->getComm\n");
-  FILE *ip;
-  int i;
-
-  protein.Community =malloc(sizeof(commStr));
-  if ((protein.Community->community = (int *) calloc(protein.nres, sizeof(int))) == NULL)
-    printf("No memory space allocatable for finding communities.\n");
-  ip = fopen("Community45.log", "r");
-  for (i=0; i<protein.nres; i++) {
-    fscanf(input, "%d\n", &(protein.Community->community[i]));
-  }
-  protein.Community->communityNumber = 0;
-  for (i=0; i<protein.nres; i++) {
-    if (protein.Community->community[i] > protein.Community->communityNumber)
-      protein.Community->communityNumber = protein.Community->community[i];
-  }
-  protein.Community->communityNumber = protein.Community->communityNumber + 1;
-  printf("Number of communities is %d\n", protein.Community->communityNumber);
-  fclose(ip);
-
-  printf("->getComm\n");
-  return;
-}
-
-
-void getFlowComm(Graph protein, FILE *output4)
-{
-  printf("->getFlowComm\n");
-  int i, j, k, l, numPairs, max, m, n, numPred;
-  int *done;
-  int **CommLink;
-  nodePtr predPtr;
-  float max1, TotalFlow, DirectFlow, percentFlow;
-  float *edgeConn, *nodeConn;
-  float **conn, **CommChange, **TotalCommChange;
-  
-  max = 0;
-  m = 1;
-  
-  printf("number of communities = %d\n", protein.Community->communityNumber);
-  if ((edgeConn = (float *) calloc(protein.nedges, sizeof(float))) == NULL)
-    printf("No memory space allocatable for finding flow between communities.\n");
-  if ((nodeConn = (float *) calloc(protein.nres, sizeof(float))) == NULL)
-    printf("No memory space allocatable for finding flow between communities.\n");
-  if ((done = (int *) calloc(protein.nres, sizeof(int))) == NULL)
-    printf("No memory space allocatable for finding flow between communities.\n");
-
-  if ((conn = (float **) calloc(protein.nres, sizeof(float*))) == NULL)
-    printf("No memory space allocatable for calculating edge Connectivity.\n");
-  for (i=0; i<protein.nres; i++)
-    if ((conn[i] = (float *) calloc(protein.nres, sizeof(float))) == NULL)
-      printf("No memory space allocatable for calculating flow between communities.\n");
-
-  if ((CommChange = (float **) calloc(protein.Community->communityNumber, sizeof(float*))) == NULL)
-    printf("No memory space allocatable for calculating edge Connectivity.\n");
-  for (i=0; i<protein.Community->communityNumber; i++)
-    if ((CommChange[i] = (float *) calloc(protein.Community->communityNumber, sizeof(float))) == NULL)
-      printf("No memory space allocatable for calculating flow between communities.\n");
-
-  if ((TotalCommChange = (float **) calloc(protein.Community->communityNumber, sizeof(float*))) == NULL)
-    printf("No memory space allocatable for calculating edge Connectivity.\n");
-  for (i=0; i<protein.Community->communityNumber; i++)
-    if ((TotalCommChange[i] = (float *) calloc(protein.Community->communityNumber, sizeof(float))) == NULL)
-      printf("No memory space allocatable for calculating flow between communities.\n");
-
-  if ((CommLink = (int **) calloc(protein.Community->communityNumber, sizeof(int*))) == NULL)
-    printf("No memory space allocatable for calculating edge Connectivity.\n");
-  for (i=0; i<protein.Community->communityNumber; i++)
-    if ((CommLink[i] = (int *) calloc(protein.Community->communityNumber, sizeof(int))) == NULL)
-      printf("No memory space allocatable for calculating flow between communities.\n");
-
-  for (i=0; i<protein.Community->communityNumber; i++)
-    for (j=0; j<protein.Community->communityNumber; j++) {
-      CommLink[i][j] = 0;
-      TotalCommChange[i][j] = 0;
-      CommChange[i][j] = 0;
-    }
-
-  /* Loop over all pairs of communities. */
-  for (i=0; i<protein.Community->communityNumber; i++) {
-    for (j=(i+1); j<protein.Community->communityNumber; j++) {
-    //for (j=protein.Community->communityNumber-1; j>i; j--) {
-      //fprintf(output4,"i=%d, j=%d\n",i,j);
-      numPairs = 0;
-      for (k=0; k<protein.nedges; k++)
-	edgeConn[k] = 0;
-
-      /* For each pair of communities, find out how many of the paths go through
-	 other communities. */
-      for (k=0; k<protein.Community->communityNumber; k++)
-	for (l=0; l<protein.Community->communityNumber; l++)
-	  CommChange[k][l] = 0;
-      
-      for (k=0; k<protein.nres; k++) {
-
-	for (l=0; l<protein.nres; l++)
-	  for (n=0; n<protein.nres; n++)
-	    conn[l][n] = 0;
-
-	/* if we're dealing with a residue from community i,
-	   loop through all residues and identify edges between this residue
-	   and residues in community j. */
-	if (protein.Community->community[k] == i) {
-	  //fprintf(output4," k=%d, protein.Community->community[%d] = %d\n",k,k,i);
-	  max = 0;
-	  for (l=0; l <protein.nres; l++) {
-	    if (protein.Community->community[l] == j) {
-	      numPairs++;
-	      
-	      /* Got to trace back all paths from residue k and l in the same
-		 way as edge Connectivity was calculated.
-		 Mark direct connections from residue k in community i to
-		 residue l in community j. */
-	      if ((protein.shortDis[k][l] > 0) && (protein.shortDis[k][l] < BIG)) {
-		done[l] = 0;
-		nodeConn[l] = 1;
-	      } else {
-		done[l] = 1;
-		nodeConn[l] = 0;
-	      }
-	      
-	      /*if ((protein.shortDis[k][l] > max) && (protein.shortDis[k][l] < BIG)) {
-		max = protein.shortDis[k][l];
-		m = l;
-		} */
-	    } else {
-	      /* Mark all node-node (k to l) connections between i and !j. */
-	      done[l] = 0;
-	      nodeConn[l] = 0;
-	    }
-
-	    /* Find longest node-node (k to l) distance from community i to any
-	       other community. */
-	    if ((protein.shortDis[k][l] > max) && (protein.shortDis[k][l] < BIG)) {
-	      max = protein.shortDis[k][l];
-	      m = l;
-	    }
-	  }
-	}
-	
-	//fprintf(output4,"-----WHILE-----\n");
-	/*  */
-	while (max != 0) {
-	  done[m] = 1;   /* Do not use this node as an endpoint in the future. */
-	  predPtr = protein.Pred[k][m];
-	  numPred = 0;   /* Number of shortest path branches from m to k. */
-	  //fprintf(output4,"%d",m);
-	  while (predPtr != NULL) {
-	    //fprintf(output4,"->%d",predPtr->residue);
-	    predPtr = predPtr->next;
-	    numPred++;
-	  }
-	  predPtr = protein.Pred[k][m];
-	  //fprintf(output4, "\n  numPred = %d\n",numPred);
-	  
-	  /* Add up fraction of path that is not within the current community. */
-	  while (predPtr != NULL) {
-	    nodeConn[predPtr->residue] += nodeConn[m]/numPred;
-	    conn[predPtr->residue][m] = nodeConn[m]/numPred;
-	    conn[m][predPtr->residue] = nodeConn[m]/numPred;
-	    /*fprintf(output4, "    m: nodeConn[%d] = %f\n",m,nodeConn[m]);
-	      fprintf(output4, "    p: nodeConn[%d] = %f\n",predPtr->residue,nodeConn[predPtr->residue]);
-	      for(z=0; z<protein.nres; z++) {
-	      fprintf(output4, "%1.2f ",nodeConn[z]);
-	      }
-	      fprintf(output4, "\n");*/
-	    if (protein.Community->community[predPtr->residue] != protein.Community->community[m]) {
-	      CommChange[protein.Community->community[m]][protein.Community->community[predPtr->residue]] += conn[m][predPtr->residue];
-	      //fprintf(output4,"      conn[%d][%d] = %f\n",m,predPtr->residue,conn[m][predPtr->residue]);
-	    }
-	    predPtr = predPtr->next;
-	  }
-
-	  /* Pick new max path between residue k and farthest residue l in the molecule */
-	  max = 0;
-	  for (l=0; l<protein.nres; l++) {
-	    if ((protein.shortDis[k][l] > max) && (done[l] != 1)) {
-	      max = protein.shortDis[k][l];
-	      m = l;
-	    }
-	  }
-	}
-	
-	/* Set edge connectivities for all edges. */
-	for (l=0; l<protein.nedges; l++) {
-	  edgeConn[l] += conn[protein.edge[l]->res1][protein.edge[l]->res2];
-	}
-      }
-
-      /* Determine whether communities are connected. */
-      max1 = 0;
-      for (l=0; l<protein.nedges; l++) 
-	if (max1 < edgeConn[l])
-	  max1 = edgeConn[l];
-
-      /* Only calculate flow between communities that are directly connected. */
-      if (max1 != 0) {
-	TotalFlow=0;
-	/*fprintf(output4, "Flow between communities %d and %d\n", i, j);
-	  for (l=0; l<protein.nedges; l++) {
-	  fprintf(output4, "%d %d %f\n",
-	  protein.edge[l]->res1, protein.edge[l]->res2, edgeConn[l]);
-	  }
-	  fprintf(output4, "\n");
-	  for (k=0; k<protein.Community->communityNumber; k++) {
-	  for (l=0; l<protein.Community->communityNumber; l++) {
-	  fprintf(output4, "%f ", CommChange[k][l]);
-	  }
-	  fprintf(output4, "\n");
-	  }*/
-	for (k=0; k<protein.Community->communityNumber; k++) {
-	  TotalFlow += abs(CommChange[i][k] - CommChange[k][i]);
-	  /*fprintf(output4, "k %d Flow %f\n", k, TotalFlow);*/
-	}
-	DirectFlow = abs(CommChange[i][j] - CommChange[j][i]);
-	/*fprintf(output4, "i=%d, Flow %f\n", i, TotalFlow);
-	  fprintf(output4, "i=%d, j=%d, Direct Flow %f\n", i, j, DirectFlow);
-	  fprintf(output4, "          CommChange[%d][%d] = %f\n",i,j,CommChange[i][j]);
-	  fprintf(output4, "          CommChange[%d][%d] = %f\n",j,i,CommChange[j][i]);*/
-	percentFlow = DirectFlow/TotalFlow * 100;
-
-	/* CommLink is a matrix of flags for community flows responsible for >15%. */
-	if (percentFlow >= 15) {
-	  CommLink[i][j] = 1;
-	  CommLink[j][i] = 1;
-	} else {
-	  CommLink[i][j] = 0;
-	  CommLink[j][i] = 0;
-	}
-	/*fprintf(output4, "Total Flow = %f, Direct Flow = %f, percentFlow = %f CommLink = %d \n",
-	  TotalFlow, DirectFlow, percentFlow, CommLink[i][j]);*/
-
-	/*fprintf(output4,"***COMMCHANGE***\n");
-	  for (k=0; k<protein.Community->communityNumber; k++) {
-	  for (l=0; l<protein.Community->communityNumber; l++) {
-	  fprintf(output4, "%f ", CommChange[k][l]);
-	  }
-	  fprintf(output4, "\n");
-	  }
-	  fprintf(output4, "\n");*/
-
-	for (k=0; k<protein.Community->communityNumber; k++) {
-	  for (l=0; l<protein.Community->communityNumber; l++) {
-	    TotalCommChange[k][l] += abs(CommChange[k][l] - CommChange[l][k]);
-	    fprintf(output4, "%f ", TotalCommChange[k][l]);
-	  }
-	  fprintf(output4, "\n");
-	}
-	fprintf(output4, "\n");
-      }
-    }
-  }
-  
-  fprintf(output4, "Total Community Flow is: \n");
-  for (i=0; i<protein.Community->communityNumber; i++) {
-    for (j=0; j<protein.Community->communityNumber; j++) {
-      if (CommLink[i][j] == 0)
-	TotalCommChange[i][j] = 0;
-      fprintf(output4, "%f ", TotalCommChange[i][j]);
-    }
-    fprintf(output4, "\n");
-  }
-  
-  free(edgeConn);
-  free(nodeConn);
-  free(done);
-  free(conn);
-  free(CommChange);
-  free(CommLink);
-  free(TotalCommChange);
-
-  printf("<-getFlowComm\n");
-  return;
-}
-
-
-void getIntercommunityFlow(Graph protein, FILE *output)
-{
-  printf("->getIntercommunityFlow\n");
-  int i, j, k, l;
-  float edgeFlow = 0.0;
-  float **intercommunityFlow;
-  
-  printf("number of communities = %d\n", protein.Community->communityNumber);
-
-  if ((intercommunityFlow = (float **) calloc(protein.Community->communityNumber, sizeof(float*))) == NULL)
-    printf("No memory space allocatable for calculating flow between communities.\n");
-  for (i=0; i<protein.Community->communityNumber; i++)
-    if ((intercommunityFlow[i] = (float *) calloc(protein.Community->communityNumber, sizeof(float))) == NULL)
-      printf("No memory space allocatable for calculating flow between communities.\n");
-
-  for (i=0; i<protein.Community->communityNumber; i++)
-    for (j=0; j<protein.Community->communityNumber; j++) {
-      intercommunityFlow[i][j] = 0;
-    }
-
-
-  /* Loop over all pairs of communities. */
-  for (i=0; i<protein.Community->communityNumber; i++) {
-    for (j=(i+1); j<protein.Community->communityNumber; j++) {
-      /* For each pair of communities, sum edge weight for edges
-	 between the communities. */      
-      for (k=0; k<protein.nres; k++) {
-
-	/* if we're dealing with a residue from the current community,
-	   loop through all residues and identify edges between this residue
-	   and residues in community j. */
-	if (protein.Community->community[k] == i) {
-	  for (l=0; l <protein.nres; l++) {
-	    if (protein.Community->community[l] == j) {
-	      
-	      /* Connections from residue k in community i to residue l in
-		 community j contribute to the flow between i & j. */
-	      // XXX - issues if there actually is a node pair with perfect correlation
-	      if ((protein.dis[k][l] > 0) && (protein.dis[k][l] < BIG)) {
-		//printf("protein.dis[%d][%d] = %d\n",k,l,protein.dis[k][l]);
-		// Distance values are multiplied by 100 when read in.
-		// Distances are calculated by adjacencyMatrix.tcl as
-		//   -log(corrVal) where corrVal is from the carma correlation
-		//   matrix
-		edgeFlow = exp( (-(float)protein.dis[k][l]) / 100.0 );
-		intercommunityFlow[i][j] += edgeFlow;
-		intercommunityFlow[j][i] += edgeFlow;
-	      }
-	    }
-	  }
-	}
-      }
-    }
-  }
-
-  fprintf(output, "Intercommunity Flow is: \n");
-  for (i=0; i<protein.Community->communityNumber; i++) {
-    for (j=0; j<protein.Community->communityNumber; j++) {
-      fprintf(output, "%f ", intercommunityFlow[i][j]);
-    }
-    fprintf(output, "\n");
-  }
-
-  for(i=0; i<protein.Community->communityNumber; i++)
-    free(intercommunityFlow[i]);
-  free(intercommunityFlow);
-
-  printf("<-getIntercommunityFlow\n");
-  return;
-}
-
-
-void characteristicPathLengthNodes(Graph protein, FILE *output)
-{
-  /*Graph dummy;*/
-  	Graph *dummyPtr = copyGraph(&protein);
-  	int i, j, k, l, m, currentResIndex;
-	int startNode, midNode, endNode;
-	float charPathLength;
-	float *charPathLengthNode, *diffCharPathLengthNode;
-	int *residues;
-	int residueCount;
-	
-	startNode = 0;
-	midNode = 74;
-	endNode = protein.nres;
-	
-	/*Calculating characteristic path length as the average path length between nodes that are connected by a path.*/
-	printf("->characteristicPathLength\n");
-	
-	k = 0;
-	charPathLength = 0;
-	for (i=0; i<protein.nres; i++) {
-		for (j=0; j<protein.nres; j++) {
-			if (protein.shortDis[i][j] < BIG) {
-				charPathLength = charPathLength + protein.shortDis[i][j];
-				k = k + 1;
-			}
-		}
-	}
-	k = k - protein.nres; /* Removing diagonal terms in shortDis matrix*/
-	charPathLength = charPathLength/k;
-	fprintf(output, "Characteristic path length of network is %f\n", charPathLength);
-	
-	residueCount = dummyPtr->nres - 1;
-	residues = (int *) calloc(dummyPtr->nres, sizeof(int));
-	for (i=0; i<dummyPtr->nres; i++) {
-		residues[i] = i;
-	}
-	charPathLengthNode = (float *) calloc((endNode-startNode+1), sizeof(float));
-	diffCharPathLengthNode = (float *) calloc((endNode-startNode+1), sizeof(float));
-	m = 0;
-	fprintf(output, "Difference in characteristic lengths measured by removing nodes \n"); 
-	fprintf(output, "Node   Difference in Characteristic path length\n");	
-	for (l=startNode; l<endNode; l++) {
-	  currentResIndex = 0;
-		for (i=0; i<protein.nres; i++) {
-			for (j=0; j<protein.nres; j++) {
-				if ((i != l) && (j!=l)) {				
-					dummyPtr->dis[i][j] = protein.dis[i][j];
-				} else {
-					dummyPtr->dis[i][j] = 0;
-				}
-			}
-			if (i != l) {
-			  residues[i] = currentResIndex;
-			  currentResIndex++;
-			}
-		} 
-		floydWarshall(dummyPtr, residues, residueCount);
-		/*printf("I got here\n");*/
-		k = 0;
-		charPathLengthNode[m] = 0;
-		for (i=0; i<dummyPtr->nres; i++) {
-			for (j=0; j<dummyPtr->nres; j++) {
-				if (dummyPtr->shortDis[i][j] < BIG) {
-					charPathLengthNode[m] = charPathLengthNode[m] + dummyPtr->shortDis[i][j];
-					k = k + 1;
-				}
-			}
-		}
-		k = k - protein.nres; /* Removing diagonal terms in shortDis matrix*/
-		charPathLengthNode[m] = charPathLengthNode[m]/k;
-		printf("Node %d\n", l);
-		diffCharPathLengthNode[m] = charPathLengthNode[m] - charPathLength;
-		fprintf(output,"  %d       %f\n", l, diffCharPathLengthNode[m]);
-		m = m + 1;
-	}
-	
-	m = 0;
-	fprintf(output, "Difference in characteristic lengths measured by removing edges \n"); 
-	fprintf(output, "Node   Difference in Characteristic path length\n");
-	for (l=startNode; l<endNode; l++) {
-		for (i=0; i<protein.nres; i++) {
-			for (j=0; j<protein.nres; j++) {
-				if ((i != l) && (j!=l)) {				
-					dummyPtr->dis[i][j] = protein.dis[i][j];
-				} 
-				else if ((i==l) && (i <= midNode) && (j <= midNode) && (j >= startNode)) {
-					dummyPtr->dis[i][j] = protein.dis[i][j];
-				} else if ((j==l) && (j <= midNode) && (i <= midNode) && (i >= startNode)) {
-					dummyPtr->dis[i][j] = protein.dis[i][j];
-				} else if ((i==l) && (i > midNode) && (j > midNode) && (j < endNode)) {
-					dummyPtr->dis[i][j] = protein.dis[i][j];
-				} else if ((j==l) && (j > midNode) && (i > midNode) && (i >= startNode)) {
-					dummyPtr->dis[i][j] = protein.dis[i][j];
-				} else {
-					dummyPtr->dis[i][j] = 0;
-				}
-			}
-		}
-				
-		floydWarshall(dummyPtr, residues, residueCount);
-		/*printf("I got here\n");*/
-		
-		k = 0;
-		charPathLengthNode[m] = 0;
-		for (i=0; i<dummyPtr->nres; i++) {
-			for (j=0; j<dummyPtr->nres; j++) {
-				if (dummyPtr->shortDis[i][j] < BIG) {
-					charPathLengthNode[m] = charPathLengthNode[m] + dummyPtr->shortDis[i][j];
-					k = k + 1;
-				}
-			}
-		}
-		k = k - protein.nres; 
-
-		/* Removing diagonal terms in shortDis matrix*/
-		charPathLengthNode[m] = charPathLengthNode[m]/k;
-		printf("Node %d\n", l);
-		diffCharPathLengthNode[m] = charPathLengthNode[m] - charPathLength;
-		fprintf(output,"  %d       %f\n", l, diffCharPathLengthNode[m]);
-		m = m + 1;
-	}
-	printf("<-characteristicPathLength\n");
-}
-
-
-void graphProperties(Graph protein, FILE *output)
-{
-	int i,j;
-	int startRnaNode, endRnaNode;
-	float distanceRna, degreeRna, distanceProt, degreeProt, distanceInt, degreeInt;
-	
-	startRnaNode = 0;
-	endRnaNode = 74;
-	distanceRna = 0;
-	degreeRna = 0;
-	for (i=startRnaNode; i<=endRnaNode; i++) {
-		for (j=(i + 1); j<=endRnaNode; j++) {
-			if (protein.dis[i][j] != 0) {
-				distanceRna = distanceRna + protein.dis[i][j];
-				degreeRna = degreeRna + 1;
-			}
-		}
-	}
-	distanceRna = distanceRna/degreeRna;
-	degreeRna = degreeRna/(endRnaNode - startRnaNode + 1);
-	printf("Average distance in RNA = %f \n", distanceRna);
-	printf("Average degree in RNA = %f \n", degreeRna);
-
-	distanceProt = 0;
-	degreeProt = 0;
-	for (i=(endRnaNode + 1); i < protein.nres; i++) {
-		for (j=(i + 1); j < protein.nres; j++) {
-			if (protein.dis[i][j] != 0) {
-				distanceProt = distanceProt + protein.dis[i][j];
-				degreeProt = degreeProt + 1;
-			}
-		}
-	}
-	distanceProt = distanceProt/degreeProt;
-	degreeProt = degreeProt/(protein.nres - (endRnaNode - startRnaNode + 1));
-	printf("Average distance in Protein = %f \n", distanceProt);
-	printf("Average degree in Protein = %f \n", degreeProt);
-	
-	distanceInt = 0;
-	degreeInt = 0;
-	for (i=startRnaNode; i<=endRnaNode; i++) {
-		for (j=(endRnaNode + 1); j<protein.nres; j++) {
-			if (protein.dis[i][j] != 0) {
-				distanceInt = distanceInt + protein.dis[i][j];
-				degreeInt = degreeInt + 1;
-			}
-		}
-	}
-	distanceInt = distanceInt/degreeInt;
-	degreeInt = degreeInt/(endRnaNode - startRnaNode + 1);
-	printf("Average distance in Protein-RNA interface = %f \n", distanceInt);
-	printf("Average degree in Protein-RNA interface per tRNA nucleotide = %f \n", degreeInt);
-
-	return;
-}
-
-
-void printEdgeConnectivities(Graph *protein, FILE *output) {
-
-  float** edgeConMatrix;
-  int i=0;
-  int j=0;
-
-  if ((edgeConMatrix = (float **) calloc(protein->nres, sizeof(float*))) == NULL)
-    printf("Error::printEdgeConnectivities: could not allocate memory for edgeConMatrix.\n");
-  for (i=0; i<protein->nres; i++)
-    if ((edgeConMatrix[i] = (float *) calloc(protein->nres, sizeof(float))) == NULL)
-      printf("Error::printEdgeConnectivities: could not allocate memory for edgeConMatrix.\n");
-
-  for(i=0; i<protein->nres; i++) {
-    for(j=0; j<protein->nres; j++) {
-      edgeConMatrix[i][j] = 0.0;
-    }
-  }
-
-  /* Loop over all edges and put betweenness information in edgeConMatrix. */
-  for (i=0; i<protein->nedges; i++) {
-    if (protein->edge[i]->edgeConn != 0.0) {
-      edgeConMatrix[protein->edge[i]->res1][protein->edge[i]->res2] = protein->edge[i]->edgeConn;
-      edgeConMatrix[protein->edge[i]->res2][protein->edge[i]->res1] = protein->edge[i]->edgeConn;
-    }
-  }
-
-  /* Print the matrix to output. */
-  if (protein->line != NULL) {
-    fprintf(output,"%s",protein->line);
-  }
-  for(i=0; i<protein->nres; i++) {
-    for(j=0; j<protein->nres; j++) {
-      fprintf(output,"%f ", edgeConMatrix[i][j]);
-    }
-    fprintf(output,"\n");
-  }
-  
-  return;
-}
-
 
 void printShortestDistances(Graph *protein, FILE *output) {
 

@@ -11,6 +11,7 @@ with open('params.json', 'r') as filename:
 rule targets: 
 	input:
 		expand("results/clustering/{sample}.SC", sample=samples), 
+		expand("results/clustering/{sample}.GN", sample=samples),
 		expand("results/plots/{sample}.SC.clustering.png", sample=samples), 
 		expand("results/plots/{sample}.SC.quality.png", sample=samples) 
 		
@@ -106,7 +107,23 @@ rule gplmDCA:
 	log: 
 		"results/gplmDCA/{sample}.log"
 	shell: 
-		"matlab -nodisplay -nosplash -r \"gplmDCA_asymmetric('{input.msa}', '{output}', {params.lambda_h}, {params.lambda_J}, {params.lambda_chi}, {params.reweighting_threshold}, {params.nr_of_cores}, {params.M})\" 2> {log}"
+		"""
+		wait=$((1 + RANDOM % 10)).$((1 + RANDOM % 6))
+		sleep(wait) # randomly wait to avoid job clashes 
+		matlab -nodisplay -nosplash -r \"gplmDCA_asymmetric('{input.msa}', '{output}', {params.lambda_h}, {params.lambda_J}, {params.lambda_chi}, {params.reweighting_threshold}, {params.nr_of_cores}, {params.M})\" 2> {log}
+		"""
+
+rule girvan_newman:
+	input: 
+		dca="results/dca/{sample}.gplmDCA"
+	output: 
+		"results/clustering/{sample}.GN"
+	log:  
+		"results/clustering_stats/results_{sample}.GN"
+	shell: 
+		"""
+		./cluster_GN.sh {input} {output} > {log}	
+		"""
 
 rule spectral_clustering: 
 	input: 
@@ -114,7 +131,7 @@ rule spectral_clustering:
 	output:
 		clust="results/clustering/{sample}.SC",
 		stats="results/clustering_stats/{sample}.SCstats",
-		toplot="results/clustering_stats/results_{sample}"
+		toplot=directory("results/clustering_stats/results_{sample}.SC")
 	conda:
 		"env/spectrus.yaml"
 	shell:
@@ -123,12 +140,14 @@ rule spectral_clustering:
 		./cluster_spectrus.sh {input.dca} $sample {output.clust} results/clustering_stats/ > {output.stats} &&
 		sed -i '/$sample/d' sample_list.dat && echo "$sample OK" >> fasta_done.dat
 		rm -rf results/clustering_stats/results_$sample
-		mv -f results_"$sample".temp/ {output.toplot}
+		mkdir -p {output.toplot}
+		mv results_"$sample".temp/* {output.toplot}
+		rmdir results_"$sample".temp/
 		""" 
 
 rule output_graph: 
 	input: 
-		SC="results/clustering_stats/results_{sample}"
+		SC="results/clustering_stats/results_{sample}.SC"
 	output: 
 		clust="results/plots/{sample}.SC.clustering.png", 
 		qual="results/plots/{sample}.SC.quality.png"
@@ -136,5 +155,5 @@ rule output_graph:
 		"env/Rplot.yaml"
 	shell: """
 		mkdir -p results/plots;
-		Rscript {input.SC} {output.clust} {output.qual}
+		Rscript plot_graphics.R {input.SC} {output.clust} {output.qual}
 		"""

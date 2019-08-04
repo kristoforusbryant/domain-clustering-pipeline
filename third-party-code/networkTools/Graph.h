@@ -207,7 +207,7 @@ void addNodeToCommunityTree(Graph *proteinGraph, Graph *tempGraph, int numComm, 
  * @param output3
  * @param output4
  */
-void gnewman(Graph *protein, FILE *output3, FILE *output4, char *community_tcl_fl);
+void gnewman(Graph *protein, FILE *output3, char *community_tcl_fl);
 
 /**
  * Get the community information if intermediate files are present for doing
@@ -219,54 +219,6 @@ void gnewman(Graph *protein, FILE *output3, FILE *output4, char *community_tcl_f
  * @param input
  */
 void getComm(Graph protein, FILE *input);
-
-/**
- * Calculate the amount of communication between different communities in the
- * network.
- * This information helps in calculating the width of
- * edges in the community diagram for the paper. For this subroutine, only the 
- * network is input in the form of Graph.
- * @param protein graph for community communication calculation
- * @param output4
- */
-void getFlowComm(Graph protein, FILE *output4);
-
-/**
- * Calculate the amount of communication between different communities in the
- * network.
- * This information helps in calculating the width of
- * edges in the community diagram for the paper. For this subroutine, only the 
- * network is input in the form of Graph.
- * @param protein graph for community communication calculation
- * @param output4
- */
-void getIntercommunityFlow(Graph protein, FILE *output);
-
-/**
- * This function is used to find the nodes from the tRNA that affect the 
- * characteristic path length the most. 
- * This is similar to the Ruth Nussinov measure for most important nodes in the 
- * network.
- * @param protein graph for characteristic path length calculations.
- * @param output4
- */
-void characteristicPathLengthNodes(Graph protein, FILE *output);
-
-/**
- * This function is used to find some properties of the graph such as degree and 
- * average distance between nearest neighbors in two separate macromolecules in 
- * the graph.
- * @param protein graph for calculating graph properties.
- * @param output4
- */
-void graphProperties(Graph protein, FILE *output);
-
-/**
- * Print a file with the matrix of pairwise edge connectivities.
- * @param protein
- * @param output
- */
-void printEdgeConnectivities(Graph *protein, FILE *output);
 
 /**
  * Print a file with the matrix of shortest path distances.

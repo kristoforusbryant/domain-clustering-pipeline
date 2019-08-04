@@ -10,15 +10,15 @@ OOPTIONS = -Wall -O3 -o
 #OOPTIONS = -Wall -ggdb -o
 LIBS = -lm
 
-all: gncommunities subopt
+all: gncommunities edgelist_to_simmtx 
 
 evolution: Evolution
 
 gncommunities: $(OBJS)
 	$(CC) $(LIBS) $(OOPTIONS) gncommunities $(OBJS)
 
-subopt: $(OBJS2)
-	$(CC) $(LIBS) -o subopt $(OBJS2)
+edgelist_to_simmtx: edgelist_to_simmtx.c
+	$(CC) $(LIBS) edgelist_to_simmtx
 
 treeTest: treeTest.o Tree.o
 	$(CC) $(LIBS) -o treeTest treeTest.o Tree.o
