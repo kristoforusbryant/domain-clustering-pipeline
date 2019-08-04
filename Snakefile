@@ -109,7 +109,7 @@ rule gplmDCA:
 	shell: 
 		"""
 		wait=$((1 + RANDOM % 10)).$((1 + RANDOM % 6))
-		sleep(wait) # randomly wait to avoid job clashes 
+		sleep $wait # randomly wait to avoid job clashes 
 		matlab -nodisplay -nosplash -r \"gplmDCA_asymmetric('{input.msa}', '{output}', {params.lambda_h}, {params.lambda_J}, {params.lambda_chi}, {params.reweighting_threshold}, {params.nr_of_cores}, {params.M})\" 2> {log}
 		"""
 

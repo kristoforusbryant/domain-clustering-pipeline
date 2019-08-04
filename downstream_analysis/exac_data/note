@@ -1,7 +1,7 @@
 ExAC.r0.3.1.sites.vep.vcf: raw ExAC VCF obtained from ftp://ftp.broadinstitute.org/pub/ExAC_release/release0.3.1/ExAC.r0.3.1.sites.vep.vcf.gz
-ENSP_clustered.dat: Every ENSP residue annotated by is domain membership 
-
 parse_ExAC.sh: a script to VCF files with CSQ in its INFO column, and filter for necessary informations only
 ExAC.3.1.parsed: result of parsing ExAC.r0.3.1.sites.vep.vcf using parse_ExAC.sh 
 
-all_mutations_domain_specific.csv: all mutations annotated by their domain membership; result of merging ENSP_clustered and ExAC.3.1.parsed using `join -j 1 <(<ENSP_clustered sort -k 1,1) <(<ExAC.3.1.parsed sort -k 1,1)`
+ENSP_clustered.dat: Every ENSP residue annotated by its domain membership, made by aggregating either the SC or GN clusterings in results/clustering/
+
+all_mutations_domain_specific.csv: all mutations annotated by their domain membership; result of merging ENSP_clustered and ExAC.3.1.parsed using `join -j 1 -a 1 -a 1 -o auto <(<ENSP_clustered sort -k 1,1) <(<ExAC.3.1.parsed sort -k 1,1)`

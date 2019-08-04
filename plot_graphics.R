@@ -48,7 +48,7 @@ main <- function(){
   
 
   # Plot quality score against number of clusters
-  system(sprintf("sed -i 's/^[ \t]*//' %squality_score.dat", dir.name))
+  system(sprintf("sed -i 's/^[ \t]*//' %s/quality_score.dat", dir.name))
   df.qualscore <- read.csv(paste(dir.name, "quality_score.dat", sep = "/"), header = FALSE, strip.white=TRUE, sep = " ")
   colnames(df.qualscore) <- c("q", "median_quality_score", "mean_quality_score", "prefactor1", "prefactor2")
   df.qualscore = df.qualscore[df.qualscore$q <= 10,]
