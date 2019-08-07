@@ -54,10 +54,20 @@ The result along with all intermediate and log files can be found in the `result
 
 ## Analysis 
 ### Data
+Files used to preprocess the clinvar, ExAC and PanCanAtlas variations can be found in `downstream_analysis/clinvar_data`, `downstream_analysis/exac_data` and `downstream_analysis/pancanatlas_data`. The Rmd files in each folder explains what the other files are used for. The link to these datasets can be found here: 
+- Clinvar: ftp://ftp.ncbi.nih.gov/pub/clinvar/vcf_GRCh37/archive_2.0/2019/clinvar_20190715_papu.vcf.gz
+- ExAC: ftp://ftp.broadinstitute.org/pub/ExAC_release/release0.3.1/ExAC.r0.3.1.sites.vep.vcf.gz
+- PanCanAtlas: http://api.gdc.cancer.gov/data/1c8cfe5f-e52d-41ba-94da-f15ea1337efc
 
+### Preliminary Analysis 
+Analyis of the first 6,924 proteins can be found in `downstream_analysis/Analysis/Analysis_exac.Rmd`, which also explains what the other files in that directory is used for. 
 
-## Possible improvement 
-- implement sparsification for GN algorithm 
+## Under Development 
+- Analysis using PanCanAtlas
+- Further methods validation using SIFT, PolyPhen, and GERP metrics
+- Analysis using zero-inflated metrics
+- Implement Conservation score for every mutation
+- Implement sparsification for GN algorithm 
 
 ## Bibliography 
   Feinauer, C., Skwark, M. J., Pagnani, A., & Aurell, E. (2014). Improving contact prediction along three dimensions. PLoS computational
