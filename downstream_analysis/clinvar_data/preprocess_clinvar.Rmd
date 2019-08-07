@@ -67,7 +67,7 @@ to generate
 ## Populate result df with clinvar annotations
 ```{r}
 # Load all mutations
-df <- read.csv("../exac_data/all_mutations_domain_specific.csv")
+df <- read.csv("../exac_data/domain_level_mutation_counts.csv")
 all_residues <- df[c(1,2,3)] %>% unique() # 2,370,236 total residues 
 all_residues <- all_residues[order(all_residues$ENSG, all_residues$residue_position),]
 

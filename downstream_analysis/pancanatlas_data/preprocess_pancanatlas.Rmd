@@ -1,0 +1,53 @@
+---
+title: "Preprocess PanCanAtlas Mutations"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(dplyr)
+library(biomaRt)
+library(epitools)
+library(stringr)
+library(ensemblVEP)
+library(MASS)
+source("qqplot.R")
+getwd()
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+```
+
+```{r}
+mut.df <- read.csv("mc3.v0.2.8.PUBLIC.maf", sep = "\t")
+mut.df <- mut.df[, c("ENSP", "Protein_position", "BIOTYPE", 
+                     "GMAF", "Variant_Classification", "Variant_Type", "FILTER")]
+mut.df <- mut.df[as.character(mut.df$FILTER) == "PASS",] # 2,907,335 mutations
+mut.df <- mut.df[as.character(mut.df$Protein_position) != ".",] # 2,399,660 mutations
+mut.df <- mut.df[as.character(mut.df$BIOTYPE) == "protein_coding",] # 2,384,523 mutations
+mut.df.filtered <- mut.df
+mut.df.filtered$Protein_position <- sapply(mut.df$Protein_position, 
+       function(x){
+         x = gsub("(\\?- | -\\?)", "", as.character(x))
+         return(as.integer(x))
+       })
+mut.df.filtered <- mut.df.filtered[!is.na(mut.df.filtered$Protein_position),] # 2,360,323 mutations
+write.csv(mut.df.filtered, "filtered_pancan.csv", row.names = FALSE)
+```
+
+
+```{r}
+df <- read.csv("../exac_data/all_mutation_domain_specific.csv")
+df.combined <- merge(df[c("ENSP", "residue", "cluster_membership")], mut.df[,c("ENSP", "Protein_position", "PanCan.observed")], by=c("ENSP", "residue"), all=TRUE)
+
+
+
+
+```
+
+
+
+
+
+
+
+

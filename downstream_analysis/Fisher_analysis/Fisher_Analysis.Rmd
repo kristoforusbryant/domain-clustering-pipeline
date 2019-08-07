@@ -1,0 +1,423 @@
+---
+title: "Enrichment Analysis"
+author: Kristoforus 
+date: 05/08/2019
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(dplyr)
+library(biomaRt)
+library(epitools)
+library(stringr)
+library(ensemblVEP)
+library(MASS)
+source("qqplot.R")
+
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+```
+
+# Setup mutation df
+```{r}
+df = read.csv("../exac_data/all_mutation_domain_specific.csv") # 2,667,962 rows (rows represents unique residue-mutation pairs)
+
+# Extracting the sizes of every domain 
+df$temp = paste(df$ENSP, df$residue, sep = "-") # creating temporary ENSP-residue column 
+## for each residues, only keep the mutation with highest AF   
+df = df[order(df$temp, -df$AF),]
+df.uniq.pos = df[!duplicated(df$temp),] # 2,370,236 unique positions
+result.uniq.pos = count(df.uniq.pos, ENSP, cluster_membership) # 36,208 unique domains
+colnames(result.uniq.pos) <- c("ENSP", "cluster_membership", "cluster_size") 
+
+# Extracting number of all mutations
+df.uniq.pos.mutated <- df.uniq.pos[!is.na(df.uniq.pos$AF),] # 897,115 positions with mutation
+result.all.var = count(df.uniq.pos.mutated, ENSP, cluster_membership)
+colnames(result.all.var) <- c("ENSP", "cluster_membership", "n.mut.all") 
+
+# Extracting number of all 4 possible combination of functional and common mutations 
+## defining functional mutations as missense and nonsense mutations
+functional <- unique(df.uniq.pos.mutated$mutation_type)[c(2,7,9,11,14,19,23,25,26)]
+## rare functional 
+df.rare.funcl <- df.uniq.pos.mutated[df.uniq.pos.mutated$mutation_type %in% functional 
+                                         & df.uniq.pos.mutated$AF < 0.001,]
+result.rare.funcl = count(df.rare.funcl, ENSP, cluster_membership)
+colnames(result.rare.funcl) <- c("ENSP", "cluster_membership", "n.rare.funcl")
+## common functional 
+df.comm.funcl <- df.uniq.pos.mutated[df.uniq.pos.mutated$mutation_type %in% functional 
+                                         & df.uniq.pos.mutated$AF > 0.001,]
+result.comm.funcl = count(df.comm.funcl, ENSP, cluster_membership)
+colnames(result.comm.funcl) <- c("ENSP", "cluster_membership", "n.comm.funcl")
+## rare non-functional 
+df.rare.nonfuncl <- df.uniq.pos.mutated[!(df.uniq.pos.mutated$mutation_type %in% functional) 
+                                         & df.uniq.pos.mutated$AF < 0.001,]
+result.rare.nonfuncl = count(df.rare.nonfuncl, ENSP, cluster_membership)
+colnames(result.rare.nonfuncl) <- c("ENSP", "cluster_membership", "n.rare.nonfuncl")
+## common non-functional 
+df.comm.nonfuncl <- df.uniq.pos.mutated[!(df.uniq.pos.mutated$mutation_type %in% functional) 
+                                         & df.uniq.pos.mutated$AF > 0.001,]
+result.comm.nonfuncl = count(df.comm.nonfuncl, ENSP, cluster_membership)
+colnames(result.comm.nonfuncl) <- c("ENSP", "cluster_membership", "n.comm.nonfuncl")
+
+
+# Merging the data frames
+domain.mutcount = merge(result.uniq.pos, result.all.var,by=c("ENSP", "cluster_membership"), all=TRUE)
+domain.mutcount = merge(domain.mutcount,result.rare.funcl,by=c("ENSP", "cluster_membership"), all=TRUE)
+domain.mutcount = merge(domain.mutcount,result.comm.funcl,by=c("ENSP", "cluster_membership"), all=TRUE)
+domain.mutcount = merge(domain.mutcount,result.rare.nonfuncl,by=c("ENSP", "cluster_membership"), all=TRUE)
+domain.mutcount = merge(domain.mutcount,result.comm.nonfuncl,by=c("ENSP", "cluster_membership"), all=TRUE)
+
+domain.mutcount[domain.mutcount$n.mut.all %>% is.na(),]$n.mut.all <- 0 
+domain.mutcount[domain.mutcount$n.rare.funcl %>% is.na(),]$n.rare.funcl <- 0 
+domain.mutcount[domain.mutcount$n.comm.funcl %>% is.na(),]$n.comm.funcl <- 0
+domain.mutcount[domain.mutcount$n.rare.nonfuncl %>% is.na(),]$n.rare.nonfuncl <- 0
+domain.mutcount[domain.mutcount$n.comm.nonfuncl %>% is.na(),]$n.comm.nonfuncl <- 0
+
+write.csv(domain.mutcount, "domain_level_mutation_counts.csv",row.names = FALSE) # 36,208 unique domains
+```
+
+
+# Analysis using Fisher's Test 
+```{r}
+# Extract number of protein-level size and mutations counts 
+prot.lvl.mutcount = domain.mutcount %>% group_by(ENSP) %>% 
+  summarise(prot.size=sum(cluster_size), n.mut.prot = sum(n.mut.all)) 
+domain.mutcount = merge(domain.mutcount, prot.lvl.mutcount, by="ENSP", all=TRUE) 
+
+# Defining Fisher's test function 
+map.fisher <- function(row){
+  in.mut <- row$n.mut.all 
+  in.not <- row$cluster_size - in.mut 
+  out.mut <- row$n.mut.prot - in.mut
+  out.not <- (row$prot.size - row$cluster_size) - out.mut
+  mtx = matrix(c(in.mut, in.not, out.mut, out.not), 2,2)
+  
+  fisher_or = fisher.test(mtx, alternative = "two.sided", conf.level = 0.9)$estimate
+  fisher_p = fisher.test(mtx, alternative = "two.sided", conf.level = 0.9)$p.value
+  fisher_midp = ormidp.test(in.mut, in.not, out.mut, out.not)[2] %>% as.numeric
+  
+  return(c(fisher_or, fisher_p, fisher_midp) %>% as.numeric())
+}
+
+# map fisher's exact test for every row of the domain-level mutation df
+temp <- sapply(1:nrow(domain.mutcount), function(i){map.fisher(domain.mutcount[i,])})
+
+temp %>% dim()
+# add fisher's odd ratio and p-value into the domain-level mutation df
+domain.mutcount$Fisher.odd.ratio <- temp[1,] 
+domain.mutcount$Fisher.p.val <- temp[2,]
+domain.mutcount$Fisher.mid.p <- temp[3,]
+
+domain.mutcount
+```
+
+## Plotting p-value histogram and qqplots 
+```{r}
+# raw p-value
+ggplot(domain.mutcount, aes(x=Fisher.p.val)) + geom_histogram()
+qqunif.plot(domain.mutcount$Fisher.p.val + 1e-6)
+# after mid-p adjustment 
+ggplot(domain.mutcount, aes(x=Fisher.mid.p)) + geom_histogram()
+qqunif.plot(domain.mutcount$Fisher.mid.p + 1e-6)
+# after BH adjustement
+domain.mutcount$Fisher.BH.adj <- p.adjust(domain.mutcount$Fisher.mid.p, "BH")
+ggplot(domain.mutcount, aes(x=Fisher.BH.adj)) + geom_histogram()
+qqunif.plot(domain.mutcount$Fisher.BH.adj + 1e-6)
+```
+
+## Retrieving significantly constrained domains
+```{r}
+# p-value cutoff of 0.1 here is because we used two tailed test to ensure mid-p value histogram has a uniform baseline before adjusting it using Benjamini Hochberg correction.  
+constrained.Fisher = domain.mutcount[domain.mutcount$Fisher.BH.adj < 0.1 &
+                                      domain.mutcount$Fisher.odd.ratio < 1,] 
+# 1,123/36,028 of the domains are constrained (3.12%) 
+# 974/6,946 of the proteins have at least one constrained domain(14.0%)
+```
+
+
+# RVIS analysis 
+## Regress number of all mutation in a domain with number of rare mutations and calculate studentised residuals
+```{r}
+domain.mutcount
+ggplot(domain.mutcount, aes(x=n.mut.all, y=n.rare.funcl)) + geom_point()
+ggplot(domain.mutcount, aes(x=n.mut.all, y=n.comm.funcl)) + geom_point()
+ggplot(domain.mutcount, aes(x=n.mut.all, y=n.rare.funcl+n.comm.funcl)) + geom_point()
+
+domain.lm <- lm(n.comm.funcl ~ n.mut.all, domain.mutcount)
+summary(domain.lm) # p.val = 2e-16, R-squared=0.337
+rare.var <- lm(n.rare.funcl ~ n.mut.all, domain.mutcount)
+summary(rare.var) # p.val = 2e-16, R-squared=0.9686 
+all.funcl.var <- lm(n.comm.funcl + n.rare.funcl ~ n.mut.all, domain.mutcount)
+summary(all.funcl.var) # p.val = 2e-16, R-squared=0.969 
+
+domain.mutcount$RVIS.dom <- studres(domain.lm)
+```
+
+## Plot the distribution of domain-level RVIS scores
+```{r}
+ggplot(domain.mutcount, aes(RVIS.dom)) + geom_histogram()
+
+# define the domains having the bottom 5% RVIS scores as constrained
+constrained.dom.RVIS <- 
+  domain.mutcount[order(domain.mutcount$RVIS.dom),][1:as.integer(0.05*nrow(domain.mutcount)),]
+# 1,810/36,028 of the domains are constrained (5%, defined)
+# 1,429/6,946 of the proteins have at least one constrained domain (20.5%)
+
+constrained.dom.RVIS$constrained.dom <- TRUE
+domain.mutcount <- merge(domain.mutcount, constrained.dom.RVIS[
+  c("ENSP","cluster_membership","constrained.dom")],
+  by=c("ENSP", "cluster_membership"),all=TRUE)
+domain.mutcount[is.na(domain.mutcount$constrained.dom),]$constrained.dom <- FALSE
+
+# Plotting regression again with colors
+ggplot(domain.mutcount, aes(x=n.mut.all, y=n.comm.funcl, color=constrained.dom)) +
+  geom_point() + 
+  geom_smooth(color="black", method="lm", se=FALSE, linetype="solid", fullrange=TRUE) +
+  scale_color_manual(values = c("grey", "red"))
+
+# Now define it as bottom 1% instead
+constrained.dom.RVIS2 <- # 99th percentile instead
+  domain.mutcount[order(domain.mutcount$RVIS.dom),][1:as.integer(0.01*nrow(domain.mutcount)),]
+# 362/36,028 of the domains are constrained (5%, defined)
+# 358/6,946 of the proteins have at least one constrained domain (20.5%)
+
+constrained.dom.RVIS2$constrained.dom2 <- TRUE
+domain.mutcount <- merge(domain.mutcount, constrained.dom.RVIS2[
+  c("ENSP","cluster_membership","constrained.dom2")],
+  by=c("ENSP", "cluster_membership"),all=TRUE)
+domain.mutcount[is.na(domain.mutcount$constrained.dom2),]$constrained.dom2 <- FALSE
+
+# Plotting regression again with colors
+ggplot(domain.mutcount, aes(x=n.mut.all, y=n.comm.funcl, color=constrained.dom2)) +
+  geom_point() + 
+  geom_smooth(color="black", method="lm", se=FALSE, linetype="solid", fullrange=TRUE) +
+  scale_color_manual(values = c("grey", "red"))
+
+```
+
+## Regress number of all mutation in a protein with number of rare mutations and calculate studentised residuals
+```{r}
+# Extract number of protein-level size and mutations counts 
+prot.lvl.funcl.mutcount = domain.mutcount %>% group_by(ENSP) %>% 
+  summarise(n.prot.comm.funcl = sum(n.comm.funcl), n.prot.rare.funcl = sum(n.rare.funcl)) 
+domain.mutcount = merge(domain.mutcount, prot.lvl.funcl.mutcount, by="ENSP", all=TRUE) 
+
+domain.mutcount %>% colnames()
+prot.lvl.mutations <- domain.mutcount[,c("ENSP","prot.size","n.mut.prot",
+                                         "n.prot.comm.funcl","n.prot.rare.funcl")] %>%
+  unique 
+
+ggplot(prot.lvl.mutations, aes(x=n.mut.prot, y=n.prot.rare.funcl)) + geom_point()
+ggplot(prot.lvl.mutations, aes(x=n.mut.prot, y=n.prot.comm.funcl)) + geom_point()
+ggplot(prot.lvl.mutations, aes(x=n.mut.prot, y=n.prot.comm.funcl+n.prot.rare.funcl)) + geom_point()
+
+prot.lm <- lm(n.prot.comm.funcl ~ n.mut.prot, prot.lvl.mutations)
+summary(prot.lm) # p.val = 2e-16, R-squared=0.2314 
+prot.rare.var <- lm(n.prot.rare.funcl ~ n.mut.prot, prot.lvl.mutations)
+summary(prot.rare.var) # p.val = 2e-16, R-squared=0.9571 
+prot.all.funcl.var <- lm(n.prot.comm.funcl + n.prot.rare.funcl ~ n.mut.prot, prot.lvl.mutations)
+summary(prot.all.funcl.var) # p.val = 2e-16, R-squared=0.9554
+
+prot.lvl.mutations$RVIS.prot <- studres(prot.lm)
+domain.mutcount <- merge(domain.mutcount, prot.lvl.mutations[,c(1,6)], by="ENSP", all=TRUE) 
+```
+
+## Plot the distribution of domain-level RVIS scores
+```{r}
+ggplot(prot.lvl.mutations, aes(RVIS.prot)) + geom_histogram()
+
+# define the domains having the bottom 5% RVIS scores as constrained
+constrained.prot.RVIS <-
+  prot.lvl.mutations[order(prot.lvl.mutations$RVIS.prot),][1:as.integer(0.05*nrow(prot.lvl.mutations)),]
+# 347/6,946 of the proteins have at least one constrained domain (5%, defined)
+
+constrained.prot.RVIS$constrained.prot <- TRUE
+
+domain.mutcount <- merge(domain.mutcount,
+                         constrained.prot.RVIS[c("ENSP","constrained.prot")],
+                         by=c("ENSP"), all=TRUE)
+
+domain.mutcount[is.na(domain.mutcount$constrained.prot),]$constrained.prot <- FALSE
+
+domain.mutcount$n.mut.prot
+# Plotting regression again with colors
+ggplot(domain.mutcount, aes(x=n.mut.prot, y=n.prot.comm.funcl, color=constrained.prot)) +
+  geom_point() + 
+  geom_smooth(color="black", method="lm", se=FALSE, linetype="solid", fullrange=TRUE) +
+  scale_color_manual(values = c("grey", "red"))
+```
+
+# Regress domain-level RVIS against protein-level RVIS
+```{r}
+# subRVIS = bottom 5%
+ggplot(domain.mutcount, aes(x=RVIS.prot, y=RVIS.dom, color=constrained.dom)) + 
+  geom_point() + 
+  geom_smooth(color="black", method="lm", se=FALSE, linetype="solid", fullrange=TRUE) + 
+  scale_color_manual(values = c("grey", "red"))
+
+# subRVIS = bottom 1%
+ggplot(domain.mutcount, aes(x=RVIS.prot, y=RVIS.dom, color=constrained.dom2)) + 
+  geom_point() + 
+  geom_smooth(color="black", method="lm", se=FALSE, linetype="solid", fullrange=TRUE) + 
+  scale_color_manual(values = c("grey", "red"))
+
+# protRVIS = bottom 5%
+ggplot(domain.mutcount, aes(x=RVIS.prot, y=RVIS.dom, color=constrained.prot)) + 
+  geom_point() + 
+  geom_smooth(color="black", method="lm", se=FALSE, linetype="solid", fullrange=TRUE) + 
+  scale_color_manual(values = c("grey", "red"))
+
+```
+
+This suggests that proteins that has high mutation count may have domains that are depleted in mutations (i.e. nonessential proteins may have essential domains). That said, according to the current cutoff of 5%, we dont even classified these domain instances as constrained.
+
+Also, we don't observe the converse case (high domain level RVIS, low protein level RVIS), which suggests that a protein might be depleted in mutation, while none of its domains are.  
+
+# Analysis using shuffling method 
+```{r}
+shuffle <- read.csv("shuffle.csv") # 29,294 unique domains
+
+ggplot(shuffle, aes(shuffle.p.val.dom)) + geom_histogram()
+ggplot(shuffle, aes(shuffle.p.val.mut)) + geom_histogram()
+qqunif.plot(shuffle$shuffle.p.val.dom + 1e-6)
+qqunif.plot(shuffle$shuffle.p.val.mut + 1e-6)
+
+
+shuffle$p.adj.dom <- p.adjust(shuffle$shuffle.p.val.dom, "BH")
+shuffle$p.adj.mut <- p.adjust(shuffle$shuffle.p.val.mut, "BH")
+
+ggplot(shuffle, aes(p.adj.dom)) + geom_histogram()
+ggplot(shuffle, aes(p.adj.mut)) + geom_histogram()
+
+constrained.shuffle.dom <- shuffle[shuffle$p.adj.dom < 0.05,] # 1,100/29,294 domains (3.7%)  
+constrained.shuffle.mut <- shuffle[shuffle$p.adj.mut < 0.05,] # 495/29,294 domains (1.6%)
+
+```
+
+# Intersection between the three measures 
+```{r}
+constrained.Fisher$temp <- paste(constrained.Fisher$ENSP,
+                                 constrained.Fisher$cluster_membership,
+                                 sep = "-")
+constrained.dom.RVIS$temp <- paste(constrained.dom.RVIS$ENSP,
+                                   constrained.dom.RVIS$cluster_membership,
+                                   sep = "-")
+
+# Create template to transform ENSG annotation into ENSP
+template = df[,c("ENSP", "ENSG")] %>% unique
+template = template[template$ENSG != template$ENSG[1],]
+constrained.shuffle.dom = merge(template, constrained.shuffle.dom, by="ENSG")
+constrained.shuffle.dom$temp <- paste(constrained.shuffle.dom$ENSP, 
+                                      constrained.shuffle.dom$cluster_membership,
+                                      sep = "-")
+
+intersect(constrained.Fisher$temp %>% as.character(), 
+          constrained.dom.RVIS$temp %>% as.character()) %>% length #42
+intersect(constrained.Fisher$temp %>% as.character(), 
+          constrained.shuffle.dom$temp %>% as.character()) %>% length # 648
+intersect(constrained.shuffle.dom$temp %>% as.character(), 
+          constrained.dom.RVIS$temp %>% as.character()) %>% length # 71
+
+intersect(intersect(constrained.Fisher$temp %>% as.character(), 
+          constrained.dom.RVIS$temp %>% as.character()), 
+          constrained.shuffle.dom$temp %>% as.character()) %>%  length # 24
+
+```
+
+
+# Validation using ClinVar 
+```{r}
+# Setup clinvar 
+constrained.Fisher # 1,123/36,028
+constrained.dom.RVIS # 1,810/36,028
+constrained.prot.RVIS # 347/36,028
+constrained.shuffle.dom # 1,100/29,294
+constrained.shuffle.mut # 495/29,294
+
+clinvar = read.csv("../clinvar_data/clinvar_reduced.csv") #36,208
+clinvar = merge(template, clinvar, by="ENSG")
+clinvar.p = clinvar[,c("ENSP", "cluster_membership","pathogenic.mut")]
+
+## Merge clinvar with domain mutcount dataset
+domain.mutcount <- merge(domain.mutcount, clinvar.p, 
+                         by=c("ENSP", "cluster_membership"))
+
+## Merge clinvar with shuffle dataset
+shuffle = merge(template, shuffle, by="ENSG")
+shuffle = merge(shuffle, clinvar.p, 
+                             by=c("ENSP", "cluster_membership"))
+
+shuffle$constrained.dom <- FALSE
+shuffle[shuffle$p.adj.dom < 0.05,]$constrained.dom <- TRUE
+shuffle$constrained.mut <- FALSE
+shuffle[shuffle$p.adj.mut < 0.05,]$constrained.mut <- TRUE
+
+```
+```{r}
+# Fisher's test
+domain.mutcount$fisher.constrained <- FALSE
+domain.mutcount[domain.mutcount$Fisher.BH.adj < 0.1 &
+                        domain.mutcount$Fisher.odd.ratio<1,]$fisher.constrained <- TRUE
+
+ggplot(domain.mutcount, aes(fisher.constrained, pathogenic.mut)) + geom_boxplot()
+ggplot(domain.mutcount, aes(fisher.constrained, pathogenic.mut)) + geom_violin() + 
+  ylim(0,10)
+
+wilcox.test(domain.mutcount[domain.mutcount$fisher.constrained,]$pathogenic.mut,
+            domain.mutcount[!domain.mutcount$fisher.constrained,]$pathogenic.mut) #0.3202
+kruskal.test(domain.mutcount$pathogenic.mut, domain.mutcount$fisher.constrained) #0.3202
+
+# Domain level RVIS
+## bottom 5%
+ggplot(domain.mutcount, aes(constrained.dom, pathogenic.mut)) + geom_boxplot()
+ggplot(domain.mutcount, aes(constrained.dom, pathogenic.mut)) + geom_violin() + 
+  ylim(0,10)
+wilcox.test(domain.mutcount[domain.mutcount$constrained.dom,]$pathogenic.mut,
+            domain.mutcount[!domain.mutcount$constrained.dom,]$pathogenic.mut) # 2.2e-16
+kruskal.test(domain.mutcount$pathogenic.mut, domain.mutcount$constrained.dom) # 2.2e-16
+
+## bottom 1%
+ggplot(domain.mutcount, aes(constrained.dom2, pathogenic.mut)) + geom_boxplot()
+ggplot(domain.mutcount, aes(constrained.dom2, pathogenic.mut)) + geom_violin() + 
+  ylim(0,10)
+wilcox.test(domain.mutcount[domain.mutcount$constrained.dom2,]$pathogenic.mut,
+            domain.mutcount[!domain.mutcount$constrained.dom2,]$pathogenic.mut) # 4.484e-13
+kruskal.test(domain.mutcount$pathogenic.mut, domain.mutcount$constrained.dom) # 2.2e-16
+
+# Shuffling test
+## Shuffle the domain annotation of the residue 
+ggplot(shuffle, aes(constrained.dom, pathogenic.mut)) + geom_boxplot()
+ggplot(shuffle, aes(constrained.dom, pathogenic.mut)) + geom_violin() + 
+  ylim(0,10)
+wilcox.test(shuffle[shuffle$constrained.dom,]$pathogenic.mut
+            , shuffle[!shuffle$constrained.dom,]$pathogenic.mut) # 0.8108
+kruskal.test(shuffle$pathogenic.mut, shuffle$constrained.dom) # 0.8108
+
+## Shuffle the mutations 
+ggplot(shuffle, aes(constrained.mut, pathogenic.mut)) + geom_boxplot()
+ggplot(shuffle, aes(constrained.mut, pathogenic.mut)) + geom_violin() + 
+  ylim(0,10)
+wilcox.test(shuffle[shuffle$constrained.mut,]$pathogenic.mut
+            , shuffle[!shuffle$constrained.mut,]$pathogenic.mut) # 0.3147
+kruskal.test(shuffle$pathogenic.mut, shuffle$constrained.mut) # 0.3147
+```
+
+- For the shuffling method, what is the difference between dom and mut, how come the results is fastly different?
+- Why is it important to plot p-value histogram? What does it mean to have peak at both ends?
+- Does BH correction requires the p-value distribution to already peak at one side?  
+- Read more on mid-p value correction
+- Is it possible to argue that the RVIS pattern we are seeing now is biased because of how our samples are biased towards the shorter clusters? 
+
+
+```{r}
+ggplot(domain.mutcount, aes(prot.size)) + geom_histogram()  
+domain.mutcount$prot.size %>% summary
+ggplot(domain.mutcount, aes(cluster_size)) + geom_histogram()  
+domain.mutcount$cluster_size %>% summary
+```
+
+
+
+
+
