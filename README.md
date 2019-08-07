@@ -56,6 +56,9 @@ The result along with all intermediate and log files can be found in the `result
 ### Data
 
 
+## Possible improvement 
+- implement sparsification for GN algorithm 
+
 ## Bibliography 
   Feinauer, C., Skwark, M. J., Pagnani, A., & Aurell, E. (2014). Improving contact prediction along three dimensions. PLoS computational
   biology, 10(10), e1003847.
