@@ -60,7 +60,7 @@ Files used to preprocess the clinvar, ExAC and PanCanAtlas variations can be fou
 - PanCanAtlas: http://api.gdc.cancer.gov/data/1c8cfe5f-e52d-41ba-94da-f15ea1337efc
 
 ### Preliminary Analysis 
-Analyis of the first 6,924 proteins can be found in `downstream_analysis/Analysis/Analysis_exac.Rmd`, which also explains what the other files in that directory is used for. 
+Analysis of the first 6,924 proteins can be found in `downstream_analysis/Analysis/Analysis_exac.Rmd`, which also explains what the other files in that directory is used for. 
 
 ## Under Development 
 - Analysis using PanCanAtlas
