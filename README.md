@@ -62,12 +62,12 @@ Files used to preprocess the clinvar, ExAC and PanCanAtlas variations can be fou
 ### Preliminary Analysis 
 Analysis of the first 6,924 proteins can be found in `downstream_analysis/Analysis/Analysis_exac.Rmd`, which also explains what the other files in that directory is used for. 
 
-## Under Development 
+<!-- ## Under Development 
 - Analysis using PanCanAtlas
 - Further methods validation using SIFT, PolyPhen, and GERP metrics
 - Analysis using zero-inflated metrics
 - Implement Conservation score for every mutation
-- Implement sparsification for GN algorithm 
+- Implement sparsification for GN algorithm  -->
 
 ## Bibliography 
   Feinauer, C., Skwark, M. J., Pagnani, A., & Aurell, E. (2014). Improving contact prediction along three dimensions. PLoS computational
